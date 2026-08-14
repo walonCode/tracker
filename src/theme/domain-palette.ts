@@ -5,14 +5,11 @@
  * wallpaper and can change per-user, per-device), these colors identify each
  * of the app's 4 fixed domains and must stay stable so a domain is always
  * recognizable by color across screens, charts, and devices.
- *
- * This file is intentionally self-contained (no imports from `src/types` or
- * other in-flight parallel work) since domain modeling belongs to another
- * task running concurrently. A later phase may restyle these hex values or
- * wire them up to `src/types`'s domain model — purely cosmetic for now.
  */
 
-export type DomainKey = "daily" | "finance" | "projects" | "others";
+import type { DomainKey } from "@/types";
+
+export type { DomainKey };
 
 export interface DomainPaletteEntry {
   readonly key: DomainKey;
