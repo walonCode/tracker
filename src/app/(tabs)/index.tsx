@@ -1,21 +1,9 @@
-import { StyleSheet, Text, View } from "react-native";
+import { TodayScreen } from "@/screens/today";
 
 /**
- * Today tab — stub content for Phase 2 (navigation shell). Real content
- * (today's trackers, contribution graph, etc.) lands in a later phase.
+ * Today tab — Phase 4. Real content (checklist, activity feed, contribution
+ * graph preview) now lives in `src/screens/today`.
  */
-export default function TodayScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Today (stub)</Text>
-    </View>
-  );
+export default function TodayTab() {
+  return <TodayScreen />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

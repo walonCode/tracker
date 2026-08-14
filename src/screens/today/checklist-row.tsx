@@ -1,0 +1,64 @@
+import { Checkbox, ListItem, Text } from "@expo/ui";
+import { router } from "expo-router";
+
+import { DOMAIN_PALETTE } from "@/theme/domain-palette";
+import type { Domain, Tracker } from "@/types";
+
+export interface ChecklistRowProps {
+  tracker: Tracker;
+  domain: Domain | undefined;
+  checked: boolean;
+  progress: { done: number; total: number } | null;
+  onToggle: () => void;
+}
+
+/**
+ * One row of the fixed daily checklist. Rendered as a `ListItem` — this
+ * component intentionally does NOT wrap itself in its own `<Host>`: the
+ * parent screen (`index.tsx`) hosts a single `Host` + `Column` for the whole
+ * checklist so every row shares one native bridge instead of paying the
+ * Host-per-row cost (same pattern as `src/components/tab-bar`, just spread
+ * across component-file boundaries — Host doesn't care where in the React
+ * tree its descendants are defined).
+ *
+ * `Checkbox`/`ListItem`/`Text` here are the *universal* `@expo/ui` exports
+ * (verified via `list-components.js` — see task-5-report.md), each already
+ * platform-split internally (SwiftUI on iOS, Jetpack Compose on Android,
+ * plain View/Text fallback elsewhere) so this file needs no `.android.tsx`
+ * split of its own.
+ *
+ * The `kind: "prayer"` tracker is special-cased per the brief: instead of an
+ * inline checkbox it shows a "done/total" progress readout and routes to
+ * `/prayer-log` on tap (that screen owns actually recording fard/sunnah
+ * completion — out of scope here, see task-6/7's siblings).
+ */
+export function ChecklistRow({ tracker, domain, checked, progress, onToggle }: ChecklistRowProps) {
+  const supportingText = domain?.label;
+
+  if (tracker.kind === "prayer") {
+    const progressLabel = progress ? `${progress.done}/${progress.total}` : undefined;
+    return (
+      <ListItem
+        onPress={() => router.push("/prayer-log")}
+        supportingText={supportingText}
+        trailing={
+          progressLabel ? (
+            <Text textStyle={{ color: DOMAIN_PALETTE.daily.color }}>{progressLabel}</Text>
+          ) : undefined
+        }
+      >
+        {tracker.name}
+      </ListItem>
+    );
+  }
+
+  return (
+    <ListItem
+      onPress={onToggle}
+      leading={<Checkbox value={checked} onValueChange={onToggle} />}
+      supportingText={supportingText}
+    >
+      {tracker.name}
+    </ListItem>
+  );
+}
