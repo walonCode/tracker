@@ -1,21 +1,10 @@
-import { StyleSheet, Text, View } from "react-native";
+import HistoryScreen from "@/screens/history";
 
 /**
- * History tab — stub content for Phase 2 (navigation shell). Real content
- * lands in a later phase.
+ * History tab route. Thin re-export — real content lives in
+ * `src/screens/history` (see that folder for the screen, hook, and
+ * sub-components). Kept as a one-line file per the routes-are-thin
+ * convention (`src/app/**` files should only wire up screens, not contain
+ * logic).
  */
-export default function HistoryScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>History (stub)</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+export default HistoryScreen;
