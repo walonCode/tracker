@@ -20,12 +20,13 @@ import { getTabItems, TAB_GLYPHS } from "./use-tab-items";
  * Real Material 3 chrome for the bottom tab bar, built from
  * `@expo/ui/jetpack-compose`'s `Host` / `NavigationBar` / `Row` /
  * `IconButton` / `FloatingActionButton` (Android-only — see
- * `.claude/skills/expo-ui/references/jetpack-compose.md`). This is the one
- * file in the app that imports `@expo/ui/jetpack-compose` directly; it lives
- * under `src/components/` (never `src/app/`) per that skill's file-placement
- * rule, and is picked automatically by Metro's `.android.tsx` platform
- * resolution — `(tabs)/_layout.tsx` just imports `@/components/tab-bar`
- * without knowing which platform file it got.
+ * `.claude/skills/expo-ui/references/jetpack-compose.md`). This is one of
+ * two files in the app that import `@expo/ui/jetpack-compose` directly (the
+ * other is `src/theme/material-colors.android.ts`, for `useMaterialColors()`);
+ * both are correctly `.android`-platform-split and live outside `src/app/`
+ * per that skill's file-placement rule. This one is picked automatically by
+ * Metro's `.android.tsx` platform resolution — `(tabs)/_layout.tsx` just
+ * imports `@/components/tab-bar` without knowing which platform file it got.
  *
  * Layout: a single `Row` (2 tab items, the "+" FAB, 1 tab item) inside one
  * `NavigationBar`, itself inside one `Host`. The "+" is a plain
