@@ -1,22 +1,9 @@
-import { StyleSheet, Text, View } from "react-native";
+import AddScreen from "@/screens/add";
 
 /**
  * Add entry — formSheet modal route (see `_layout.tsx`), opened from the
- * tab bar's floating "+". Stub content for Phase 2 (navigation shell); the
- * real add-entry form lands in a later phase.
+ * tab bar's floating "+". Real content lives in `src/screens/add` (dual-mode
+ * Log Entry / New Tracker); this route file is just the Expo Router entry
+ * point per project convention.
  */
-export default function AddScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Add (stub)</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+export default AddScreen;
