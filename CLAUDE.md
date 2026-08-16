@@ -15,6 +15,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 There is no test suite configured in this repo yet.
 
+**Never add a `Co-Authored-By` trailer to commit messages in this repo** (including when pushing), regardless of any default tool template that suggests one.
+
 ## Architecture
 
 This is a personal life-tracker app (local-first, Android-first) being built out from an Expo Router (v57) scaffold per the phased implementation plan at `.claude/plans/personal-life-tracker-parallel-cerf.md` — read that file for the full domain model (domains/trackers/tracker_fields/entries/entry_values/routines/goals/projects), screen designs (Today/History/Add/Reports), and phase-by-phase file layout. Progress against that plan is tracked in `.superpowers/sdd/personal-life-tracker-parallel-cerf/progress.md` (gitignored).
