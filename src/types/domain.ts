@@ -1,5 +1,5 @@
-/** The 4 fixed, seeded-once domains. No domain-creation UI/path exists — see AGENTS/task brief. */
-export type DomainKey = "daily" | "finance" | "projects" | "others";
+/** The 5 fixed, seeded-once domains. No domain-creation UI/path exists — see AGENTS/task brief. */
+export type DomainKey = "daily" | "religion" | "finance" | "projects" | "others";
 
 export interface Domain {
   id: number;

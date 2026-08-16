@@ -26,9 +26,10 @@ interface DomainSeed {
 
 const CORE_DOMAINS: DomainSeed[] = [
   { key: "daily", label: "Daily", color: "#34C759", icon: "sun.max", sortOrder: 0 },
-  { key: "finance", label: "Finance", color: "#30B0C7", icon: "dollarsign.circle", sortOrder: 1 },
-  { key: "projects", label: "Projects", color: "#AF52DE", icon: "folder", sortOrder: 2 },
-  { key: "others", label: "Others", color: "#8E8E93", icon: "ellipsis.circle", sortOrder: 3 },
+  { key: "religion", label: "Religion", color: "#00695C", icon: "moon.stars", sortOrder: 1 },
+  { key: "finance", label: "Finance", color: "#30B0C7", icon: "dollarsign.circle", sortOrder: 2 },
+  { key: "projects", label: "Projects", color: "#AF52DE", icon: "folder", sortOrder: 3 },
+  { key: "others", label: "Others", color: "#8E8E93", icon: "ellipsis.circle", sortOrder: 4 },
 ];
 
 const PRAYERS = ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const;
@@ -61,8 +62,11 @@ async function seedDomains(db: SQLiteDatabase): Promise<void> {
 }
 
 /**
- * Seeds the single kind='prayer' tracker (domain: daily) with its 10
- * boolean fields (fard + sunnah for each of the 5 daily prayers).
+ * Seeds the single kind='prayer' tracker (domain: religion) with its 10
+ * boolean fields (fard + sunnah for each of the 5 daily prayers). Lives in
+ * its own "Religion" domain rather than "Daily" — domain groups subject
+ * matter, frequency (still "daily" here) drives the Today checklist
+ * independently of domain, so this doesn't affect checklist membership.
  * No-op if a prayer tracker already exists. The tracker row and all 10
  * field rows are created in one transaction so a crash/error partway
  * through (e.g. after 4 of 10 fields) rolls back cleanly instead of
@@ -73,14 +77,14 @@ async function seedPrayerTracker(db: SQLiteDatabase): Promise<void> {
   const existing = await listTrackersByKind(db, "prayer");
   if (existing.length > 0) return;
 
-  const dailyDomain = await getDomainByKey(db, "daily");
-  if (!dailyDomain) {
-    throw new Error("seedPrayerTracker: 'daily' domain missing — seedDomains must run first");
+  const religionDomain = await getDomainByKey(db, "religion");
+  if (!religionDomain) {
+    throw new Error("seedPrayerTracker: 'religion' domain missing — seedDomains must run first");
   }
 
   await db.withTransactionAsync(async () => {
     const tracker = await createTracker(db, {
-      domainId: dailyDomain.id,
+      domainId: religionDomain.id,
       name: "Prayer",
       frequency: "daily",
       kind: "prayer",
