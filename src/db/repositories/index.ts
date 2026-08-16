@@ -7,3 +7,4 @@ export * from "./goals";
 export * from "./projects";
 export * from "./project-pages";
 export * from "./project-blocks";
+export * from "./widget-instances";

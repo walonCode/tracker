@@ -34,7 +34,36 @@
           "imageWidth": 76
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "ContributionGraph",
+              "label": "Contribution Graph",
+              "description": "Recent-days activity grid for one tracker or all trackers combined.",
+              "minWidth": "250dp",
+              "minHeight": "150dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetFeatures": "reconfigurable"
+            },
+            {
+              "name": "ProjectTime",
+              "label": "Project Time",
+              "description": "Total time logged on your projects, this range.",
+              "minWidth": "180dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetFeatures": "reconfigurable"
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
