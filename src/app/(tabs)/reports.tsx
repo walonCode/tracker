@@ -1,21 +1,10 @@
-import { StyleSheet, Text, View } from "react-native";
+import { ReportsScreen } from "@/screens/reports";
 
 /**
- * Reports tab — stub content for Phase 2 (navigation shell). Real content
- * lands in a later phase.
+ * Reports tab — Phase 8. Real content (domain totals, trend charts, streaks,
+ * Finance/Projects breakdowns, cross-domain co-occurrence) now lives in
+ * `src/screens/reports`.
  */
-export default function ReportsScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Reports (stub)</Text>
-    </View>
-  );
+export default function ReportsTab() {
+  return <ReportsScreen />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
