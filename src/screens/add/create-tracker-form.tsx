@@ -20,7 +20,7 @@ const FREQUENCIES: { value: TrackerFrequency; label: string }[] = [
 ];
 
 /**
- * "New Tracker" mode: name, one of the 4 fixed domains, a daily/occasional
+ * "New Tracker" mode: name, one of the 5 fixed domains, a daily/occasional
  * frequency toggle, and the field builder. `kind` is never surfaced here —
  * this path always creates `kind: "standard"` trackers (see
  * `use-create-tracker.ts`); prayer/project_time trackers have their own

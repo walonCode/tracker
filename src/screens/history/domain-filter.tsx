@@ -16,9 +16,9 @@ interface FilterOption {
   color: string | null;
 }
 
-// "All" first, then the 4 domains in DOMAIN_KEYS's fixed order (daily,
-// finance, projects, others) — matches the brief's "All / Daily / Finance /
-// Projects / Others" ordering verbatim.
+// "All" first, then every domain in DOMAIN_KEYS's fixed order (daily,
+// religion, finance, projects, others) — extends the brief's "All / Daily /
+// Finance / Projects / Others" ordering with Religion, added later.
 const OPTIONS: FilterOption[] = [
   { key: "all", label: "All", color: null },
   ...DOMAIN_KEYS.map((key) => ({

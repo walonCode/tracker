@@ -6,7 +6,7 @@ import type { Migration } from "./migration";
 export const SCHEMA_SQL = `
 CREATE TABLE domains (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  key TEXT NOT NULL UNIQUE,             -- 'daily' | 'finance' | 'projects' | 'others'
+  key TEXT NOT NULL UNIQUE,             -- 'daily' | 'religion' | 'finance' | 'projects' | 'others'
   label TEXT NOT NULL,
   color TEXT NOT NULL,
   icon TEXT,

@@ -11,7 +11,7 @@ import { createProjectBlock } from "./repositories/project-blocks";
 import type { Domain, DomainKey } from "@/types";
 
 // ===========================================================================
-// Core seed — the 4 fixed domains + the built-in prayer tracker. Idempotent
+// Core seed — the 5 fixed domains + the built-in prayer tracker. Idempotent
 // (checks before inserting) and safe to call on every app boot. This is the
 // only seed that should ship to real users.
 // ===========================================================================
@@ -42,9 +42,9 @@ const PRAYER_LABELS: Record<(typeof PRAYERS)[number], string> = {
 };
 
 /**
- * Seeds the 4 fixed domains, once. No-op if any domain already exists.
- * All 4 inserts run in one transaction so a crash/error partway through
- * (e.g. after 2 of 4 domains) rolls back cleanly instead of leaving a
+ * Seeds the 5 fixed domains, once. No-op if any domain already exists.
+ * All 5 inserts run in one transaction so a crash/error partway through
+ * (e.g. after 2 of 5 domains) rolls back cleanly instead of leaving a
  * partial set that the `existing.length > 0` check would then skip forever.
  */
 async function seedDomains(db: SQLiteDatabase): Promise<void> {
@@ -112,7 +112,7 @@ async function seedPrayerTracker(db: SQLiteDatabase): Promise<void> {
 }
 
 /**
- * Seeds core, fixed application data: the 4 domains and the prayer tracker.
+ * Seeds core, fixed application data: the 5 domains and the prayer tracker.
  * Idempotent — safe to call on every app boot.
  */
 export async function seedCore(db: SQLiteDatabase): Promise<void> {
@@ -122,7 +122,7 @@ export async function seedCore(db: SQLiteDatabase): Promise<void> {
 
 // ===========================================================================
 // Example data — a handful of illustrative trackers/entries/project across
-// the 4 domains, purely so later phases have real data to render against
+// the 5 domains, purely so later phases have real data to render against
 // during development. Deliberately kept in its own function so it is easy
 // to stop calling before shipping to real users (see seedDatabase() below).
 // ===========================================================================
