@@ -14,6 +14,22 @@ import { todayLocalDateKey } from "@/lib/dates";
 import { ensureSeeded } from "@/screens/today/seed-once";
 import type { Domain, EntryWithValues, Tracker, TrackerField } from "@/types";
 
+/** `{done, total}` completion for one half (fard or sunnah) of the prayer tracker. */
+export interface PrayerProgressHalf {
+  done: number;
+  total: number;
+}
+
+/**
+ * Fard/sunnah-split completion for the `kind: "prayer"` tracker, e.g.
+ * "4/5 fard, 3/5 sunnah" — counted separately per the task-8 product
+ * requirement (a combined 10-field count would hide which half is behind).
+ */
+export interface PrayerProgress {
+  fard: PrayerProgressHalf;
+  sunnah: PrayerProgressHalf;
+}
+
 /** One row of the fixed daily checklist: a `frequency: "daily"` tracker plus today's state. */
 export interface DailyChecklistItem {
   tracker: Tracker;
@@ -24,12 +40,11 @@ export interface DailyChecklistItem {
   /** True if at least one entry exists for this tracker today. */
   checked: boolean;
   /**
-   * Fine-grained completion for trackers with boolean fields (currently only
-   * `kind: "prayer"`'s 10 fard/sunnah fields) — how many distinct fields have
-   * been logged `true` today, out of the tracker's total field count. `null`
-   * for trackers with no boolean fields, where `checked` is the only signal.
+   * Fard/sunnah completion, `kind: "prayer"` only (see `PrayerProgress`).
+   * `null` for every other tracker, where `checked` is the only signal —
+   * no other tracker kind currently has fard/sunnah-suffixed fields.
    */
-  progress: { done: number; total: number } | null;
+  progress: PrayerProgress | null;
 }
 
 export interface UseDailyChecklistResult {
@@ -47,12 +62,22 @@ export interface UseDailyChecklistResult {
   refresh: () => Promise<void>;
 }
 
-function computeProgress(
+/**
+ * Splits a tracker's boolean fields into fard/sunnah halves by matching the
+ * `name` suffix (`{prayer}_fard` / `{prayer}_sunnah`, see `src/db/seed.ts`)
+ * — never the `label` — and counts how many of each half have an
+ * `entry_values` row with `valueBoolean === true` today. Only meaningful for
+ * the `kind: "prayer"` tracker; callers gate on `tracker.kind` before
+ * calling this (a tracker with no fard/sunnah-suffixed fields yields
+ * `{done: 0, total: 0}` for both halves rather than `null`, so callers must
+ * still gate on kind rather than on this function's return shape).
+ */
+function computePrayerProgress(
   fields: TrackerField[],
   entries: EntryWithValues[]
-): { done: number; total: number } | null {
-  const booleanFields = fields.filter((f) => f.type === "boolean");
-  if (booleanFields.length === 0) return null;
+): PrayerProgress {
+  const fardFields = fields.filter((f) => f.name.endsWith("_fard"));
+  const sunnahFields = fields.filter((f) => f.name.endsWith("_sunnah"));
 
   const doneFieldIds = new Set<number>();
   for (const entry of entries) {
@@ -60,7 +85,14 @@ function computeProgress(
       if (value.valueBoolean === true) doneFieldIds.add(value.fieldId);
     }
   }
-  return { done: doneFieldIds.size, total: booleanFields.length };
+
+  const countDone = (fs: TrackerField[]) =>
+    fs.filter((f) => doneFieldIds.has(f.id)).length;
+
+  return {
+    fard: { done: countDone(fardFields), total: fardFields.length },
+    sunnah: { done: countDone(sunnahFields), total: sunnahFields.length },
+  };
 }
 
 /**
@@ -103,7 +135,7 @@ async function fetchDailyChecklist(db: SQLiteDatabase): Promise<DailyChecklistIt
         fields,
         entries,
         checked: entries.length > 0,
-        progress: computeProgress(fields, entries),
+        progress: tracker.kind === "prayer" ? computePrayerProgress(fields, entries) : null,
       };
     })
   );

@@ -1,22 +1,10 @@
-import { StyleSheet, Text, View } from "react-native";
+import { PrayerLogScreen } from "@/screens/prayer-log";
 
 /**
- * Prayer log — formSheet modal route (see `_layout.tsx`). Stub content for
- * Phase 2 (navigation shell); the real prayer-log form lands in a later
- * phase.
+ * Prayer log — formSheet modal route (see `_layout.tsx`), opened from
+ * Today's checklist row and the Add modal's "Log Entry" list when the
+ * `kind: "prayer"` tracker is selected. Real content lives in
+ * `src/screens/prayer-log`; this route file is just the Expo Router entry
+ * point per project convention (see `src/app/add.tsx`'s sibling comment).
  */
-export default function PrayerLogScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Prayer Log (stub)</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+export default PrayerLogScreen;
