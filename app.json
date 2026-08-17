@@ -9,10 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.walonfoundation.tracker",
-      "icon": "./assets/images/icon.png",
-      "entitlements": {
-        "com.apple.security.application-groups": ["group.com.walonfoundation.tracker"]
-      }
+      "icon": "./assets/images/icon.png"
     },
     "android": {
       "package": "com.walonfoundation.tracker",
@@ -91,9 +88,30 @@
         }
       ],
       [
-        "@bacons/apple-targets",
+        "expo-widgets",
         {
-          "root": "./ios-widgets"
+          "bundleIdentifier": "com.walonfoundation.tracker.widgets",
+          "groupIdentifier": "group.com.walonfoundation.tracker",
+          "widgets": [
+            {
+              "name": "ContributionGraph",
+              "displayName": "Contribution Graph",
+              "description": "Recent-days activity grid for one tracker or all trackers combined.",
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            },
+            {
+              "name": "ProjectTime",
+              "displayName": "Project Time",
+              "description": "Total time logged on your projects, this range.",
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            },
+            {
+              "name": "Prayer",
+              "displayName": "Prayer",
+              "description": "Today's fard/sunnah status for each of the five daily prayers.",
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            }
+          ]
         }
       ]
     ],

@@ -3,7 +3,6 @@
   "main": "index.ts",
   "version": "1.0.0",
   "dependencies": {
-    "@bacons/apple-targets": "^5.0.0",
     "@expo/material-symbols": "^0.1.1",
     "@expo/ui": "~57.0.10",
     "@shopify/react-native-skia": "2.6.2",
@@ -23,6 +22,7 @@
     "expo-symbols": "~57.0.2",
     "expo-system-ui": "~57.0.2",
     "expo-web-browser": "~57.0.2",
+    "expo-widgets": "^57.0.10",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.2",
