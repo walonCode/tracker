@@ -86,8 +86,16 @@ export function TodayScreen() {
               No daily trackers yet.
             </Text>
           ) : (
-            <Host matchContents style={styles.hostFullWidth}>
-              <Column spacing={0} style={styles.hostFullWidth}>
+            /*
+              No explicit width here: @expo/ui's universal `style.width`
+              bridges to a native Int on Android and can't parse a
+              percentage string like "100%" (crashes with a
+              FieldCastException). The wrapping RN `View` above stretches
+              its children to full width by default, and that propagates
+              through Host/Column the same way.
+            */
+            <Host matchContents>
+              <Column spacing={0}>
                 {checklist.items.map((item) => (
                   <ChecklistRow
                     key={item.tracker.id}
@@ -149,8 +157,5 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-  },
-  hostFullWidth: {
-    width: "100%",
   },
 });

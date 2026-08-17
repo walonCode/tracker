@@ -70,7 +70,14 @@ export default function TabBar({
 
   return (
     <View style={{ width: "100%", paddingBottom: insets.bottom }}>
-      <Host matchContents={{ vertical: true }} style={{ width: "100%" }}>
+      {/*
+        No explicit width here: @expo/ui's universal `style.width` bridges to
+        a native Int on Android and can't parse a percentage string like
+        "100%" (crashes with a FieldCastException). The wrapping RN `View`
+        above is already full-width, and Host stretches to fill it under
+        RN's default `alignItems: "stretch"`.
+      */}
+      <Host matchContents={{ vertical: true }}>
         <NavigationBar containerColor={colors.surfaceContainer}>
           <Row
             horizontalArrangement="spaceEvenly"
