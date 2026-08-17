@@ -23,8 +23,12 @@ import {
   DEFAULT_PROJECT_TIME_RANGE_DAYS,
   fetchContributionGraphWidgetData,
   fetchProjectTimeWidgetData,
+  type ContributionGraphWidgetData,
+  type ProjectTimeWidgetData,
 } from "@/widgets/widget-data";
 import type { Project, Tracker, WidgetContentType, WidgetInstanceOptions } from "@/types";
+
+import { ContributionGraphPreview, ProjectTimePreview } from "./widget-preview";
 
 const CONTRIBUTION_RANGE_OPTIONS = [7, 14, 28] as const;
 const PROJECT_RANGE_OPTIONS = [7, 30, 90] as const;
@@ -128,6 +132,31 @@ function WidgetConfigForm({ widgetInfo, renderWidget, setResult }: WidgetConfigF
     return { trackerId, rangeDays };
   }, [contentType, projectId, trackerId, rangeDays]);
 
+  // Live preview: re-fetches on every option change so the card at the top
+  // always shows what the widget will actually look like once saved,
+  // instead of making the user guess from the option rows alone.
+  const [previewData, setPreviewData] = useState<
+    ContributionGraphWidgetData | ProjectTimeWidgetData | null
+  >(null);
+
+  useEffect(() => {
+    if (loading) return;
+    let cancelled = false;
+    (async () => {
+      const data =
+        contentType === "project_time"
+          ? await fetchProjectTimeWidgetData(options)
+          : await fetchContributionGraphWidgetData(options);
+      if (!cancelled) setPreviewData(data);
+    })().catch(() => {
+      // Best-effort: a failed preview fetch just leaves the last-good
+      // preview (or none) on screen — never blocks configuring/saving.
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [contentType, options, loading]);
+
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
@@ -178,6 +207,19 @@ function WidgetConfigForm({ widgetInfo, renderWidget, setResult }: WidgetConfigF
           ? "Configure Project Time widget"
           : "Configure Contribution Graph widget"}
       </Text>
+
+      <Text style={styles.sectionLabel}>Preview</Text>
+      {previewData ? (
+        contentType === "project_time" ? (
+          <ProjectTimePreview data={previewData as ProjectTimeWidgetData} />
+        ) : (
+          <ContributionGraphPreview data={previewData as ContributionGraphWidgetData} />
+        )
+      ) : (
+        <View style={[styles.previewPlaceholder]}>
+          <ActivityIndicator />
+        </View>
+      )}
 
       {contentType === "contribution_graph" ? (
         <>
@@ -317,8 +359,17 @@ const styles = StyleSheet.create({
   },
   optionCheck: {
     fontSize: 14,
-    color: "#39D353",
+    color: "#208AEF",
     fontWeight: "700",
+  },
+  previewPlaceholder: {
+    minHeight: 108,
+    borderRadius: 16,
+    backgroundColor: "#1C1B1F",
+    borderWidth: 1,
+    borderColor: "#332D41",
+    alignItems: "center",
+    justifyContent: "center",
   },
   actions: {
     flexDirection: "row",
@@ -335,7 +386,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#332D41",
   },
   saveButton: {
-    backgroundColor: "#39D353",
+    backgroundColor: "#208AEF",
   },
   buttonText: {
     fontSize: 14,
@@ -345,6 +396,6 @@ const styles = StyleSheet.create({
     color: "#E6E1E5",
   },
   saveButtonText: {
-    color: "#1C1B1F",
+    color: "#FFFFFF",
   },
 });

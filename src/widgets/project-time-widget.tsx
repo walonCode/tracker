@@ -18,7 +18,7 @@ export interface ProjectTimeWidgetProps {
 const BACKGROUND: HexColor = "#1C1B1F";
 const ON_SURFACE: HexColor = "#E6E1E5";
 const ON_SURFACE_VARIANT: HexColor = "#CAC4D0";
-const ACCENT: HexColor = "#39D353";
+const ACCENT: HexColor = "#208AEF"; // matches the app's brand blue (app.json splash/icon)
 const MAX_ROWS = 3;
 
 function formatTotal(total: number, unit: string | null): string {
