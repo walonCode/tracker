@@ -36,6 +36,7 @@ export function DomainFilter({ value, onChange }: DomainFilterProps) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.scrollView}
       contentContainerStyle={styles.container}
     >
       {OPTIONS.map((option) => {
@@ -72,8 +73,17 @@ export function DomainFilter({ value, onChange }: DomainFilterProps) {
 }
 
 const styles = StyleSheet.create({
+  // `flexGrow: 0` stops this horizontal ScrollView from being stretched to
+  // fill its flex-column parent's remaining height (a common RN gotcha —
+  // without it, the chips row can end up as tall as whatever vertical space
+  // the sibling list below happens to leave, stretching each chip with it
+  // since the row's own `alignItems` below has no bound without this).
+  scrollView: {
+    flexGrow: 0,
+  },
   container: {
     flexDirection: "row",
+    alignItems: "flex-start",
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
