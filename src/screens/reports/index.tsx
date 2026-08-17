@@ -1,5 +1,4 @@
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import { type ReportRange, useReportsData } from "@/hooks/use-reports-data";
 import { useAppMaterialColors } from "@/theme/material-colors";
@@ -32,6 +31,10 @@ const RANGE_LABELS: Record<ReportRange, string> = {
  * trend chart — `tracker-trend.tsx` explicitly excludes Finance-domain
  * trackers and `kind: "project_time"` trackers so those two views aren't
  * duplicated.
+ *
+ * Content-only (no SafeAreaView/heading of its own) — it's embedded as the
+ * "Reports" pane of `src/screens/insights`, which owns the shared safe area
+ * and heading for both the History and Reports panes.
  */
 export function ReportsScreen() {
   const colors = useAppMaterialColors();
@@ -61,15 +64,13 @@ export function ReportsScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={["top"]}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />
-        }
-      >
-        <Text style={[styles.heading, { color: colors.onBackground }]}>Reports</Text>
-
+    <ScrollView
+      style={styles.safeArea}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />
+      }
+    >
         {error ? (
           <Text style={[styles.errorText, { color: colors.error }]}>
             Couldn&apos;t load reports: {error.message}
@@ -120,8 +121,7 @@ export function ReportsScreen() {
           entries={entriesInRange}
           rangeLabel={rangeLabel}
         />
-      </ScrollView>
-    </SafeAreaView>
+    </ScrollView>
   );
 }
 
@@ -136,6 +136,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingTop: 4,
     gap: 24,
   },
   heading: {

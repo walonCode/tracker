@@ -11,8 +11,13 @@ import {
 } from "@/lib/contribution-graph";
 import { addLocalDays, toLocalDateKey } from "@/lib/dates";
 
-/** 2 weeks, matching the `ContributionGraph`'s `weeks={PREVIEW_WEEKS}` prop below. */
-const PREVIEW_WEEKS = 2;
+/**
+ * ~4 months, matching the `ContributionGraph`'s `weeks={PREVIEW_WEEKS}` prop
+ * below. The graph now auto-sizes its cells to fill the screen's width (see
+ * `ContributionGraph`), so this is chosen for a good full-width cell size on
+ * a phone rather than to bound how much history loads.
+ */
+const PREVIEW_WEEKS = 16;
 const PREVIEW_DAYS = PREVIEW_WEEKS * 7;
 
 export interface UseContributionPreviewResult {

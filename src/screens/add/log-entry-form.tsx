@@ -123,7 +123,7 @@ export function LogEntryForm() {
 
   if (!selectedTracker) {
     return (
-      <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
+      <ScrollView style={styles.list} contentContainerStyle={styles.listContent} keyboardShouldPersistTaps="handled">
         {prayerTracker ? (
           <Pressable
             onPress={() => selectTracker(prayerTracker)}
@@ -170,7 +170,7 @@ export function LogEntryForm() {
   }
 
   return (
-    <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
+    <ScrollView style={styles.list} contentContainerStyle={styles.listContent} keyboardShouldPersistTaps="handled">
       <Pressable onPress={() => setSelectedTracker(null)}>
         <Text style={{ color: colors.primary }}>{"← Choose a different tracker"}</Text>
       </Pressable>

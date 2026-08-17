@@ -3,9 +3,11 @@
   "main": "index.ts",
   "version": "1.0.0",
   "dependencies": {
+    "@expo/material-symbols": "^0.1.1",
     "@expo/ui": "~57.0.10",
     "@shopify/react-native-skia": "2.6.2",
     "expo": "~57.0.12",
+    "expo-build-properties": "~57.0.12",
     "expo-constants": "~57.0.10",
     "expo-dev-client": "~57.0.11",
     "expo-device": "~57.0.1",

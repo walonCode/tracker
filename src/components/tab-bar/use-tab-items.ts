@@ -1,16 +1,15 @@
 import type { BottomTabBarProps } from "expo-router/js-tabs";
 
 /**
- * Route-name -> single-character glyph used as a placeholder tab icon.
- * Phase 2 stub only — real icons come with the real screen content in a
- * later phase. Kept here (rather than as vector-drawable assets) so it can
- * be shared verbatim between the Compose (`index.android.tsx`) and
- * plain-RN (`index.tsx`) tab bar implementations.
+ * Route-name -> Material Symbol name for each tab's icon. Both platform
+ * tab-bar variants (`index.android.tsx`'s `@expo/ui/jetpack-compose` Icon
+ * and `index.tsx`'s plain-RN fallback) import their own icon assets keyed
+ * off these names, so this map is just the shared source of truth for
+ * *which* icon each route gets.
  */
-export const TAB_GLYPHS: Record<string, string> = {
-  index: "T",
-  history: "H",
-  reports: "R",
+export const TAB_ICON_NAMES: Record<string, string> = {
+  index: "home",
+  insights: "bar_chart",
 };
 
 export interface TabItem {

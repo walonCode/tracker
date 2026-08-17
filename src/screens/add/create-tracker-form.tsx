@@ -86,7 +86,7 @@ export function CreateTrackerForm({ onCreated }: CreateTrackerFormProps) {
   }, [name, domainKey, frequency, fields, createTrackerWithFields, onCreated]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.fieldGroup}>
         <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>
           Tracker name

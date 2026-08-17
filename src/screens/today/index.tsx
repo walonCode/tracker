@@ -54,7 +54,7 @@ export function TodayScreen() {
   };
 
   const handleDayPress = (date: string) => {
-    router.push({ pathname: "/history", params: { date } });
+    router.push({ pathname: "/insights", params: { date } });
   };
 
   return (

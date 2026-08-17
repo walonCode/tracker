@@ -4,14 +4,22 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useAppMaterialColors } from "@/theme/material-colors";
 
-import { getTabItems, TAB_GLYPHS } from "./use-tab-items";
+import { getTabItems, TAB_ICON_NAMES } from "./use-tab-items";
+
+/** Crude glyph fallback keyed by the same Material Symbol name used on Android. */
+const FALLBACK_GLYPHS: Record<string, string> = {
+  home: "⌂",
+  bar_chart: "▤",
+};
 
 /**
  * Plain React Native fallback for the tab bar, used on every platform except
  * Android (`index.android.tsx` renders the real `@expo/ui/jetpack-compose`
- * Material 3 chrome). iOS gets a native tab bar treatment in a deferred
- * follow-up phase — this keeps things visually equivalent (same 3 tabs +
- * center "+" that pushes `/add`) and non-crashing in the meantime.
+ * Material 3 chrome, with real Material Symbols icons). iOS gets a native
+ * tab bar treatment in a deferred follow-up phase — this keeps things
+ * visually equivalent (Today + Insights + a center "Create" FAB that pushes
+ * `/add`) and non-crashing in the meantime, with plain Unicode glyphs
+ * standing in for real icons until then.
  */
 export default function TabBar({
   state,
@@ -21,7 +29,7 @@ export default function TabBar({
 }: BottomTabBarProps) {
   const colors = useAppMaterialColors();
   const items = getTabItems({ state, descriptors, navigation });
-  const [today, history, reports] = items;
+  const [today, insights] = items;
 
   const renderItem = (item: (typeof items)[number] | undefined) => {
     if (!item) {
@@ -37,7 +45,7 @@ export default function TabBar({
         accessibilityState={{ selected: item.isFocused }}
       >
         <Text style={[styles.icon, { color: tint }]}>
-          {TAB_GLYPHS[item.routeName] ?? "•"}
+          {FALLBACK_GLYPHS[TAB_ICON_NAMES[item.routeName] ?? ""] ?? "•"}
         </Text>
         <Text style={[styles.label, { color: tint }]}>{item.label}</Text>
       </Pressable>
@@ -55,18 +63,17 @@ export default function TabBar({
       ]}
     >
       {renderItem(today)}
-      {renderItem(history)}
       <Pressable
         onPress={() => router.push("/add")}
         style={[styles.fab, { backgroundColor: colors.primaryContainer }]}
         accessibilityRole="button"
-        accessibilityLabel="Add"
+        accessibilityLabel="Create"
       >
         <Text style={[styles.fabIcon, { color: colors.onPrimaryContainer }]}>
           +
         </Text>
       </Pressable>
-      {renderItem(reports)}
+      {renderItem(insights)}
     </View>
   );
 }

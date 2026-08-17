@@ -1,7 +1,7 @@
 import { Canvas, Circle, Group, RoundedRect } from "@shopify/react-native-skia";
-import { useCallback, useMemo } from "react";
-import type { GestureResponderEvent } from "react-native";
-import { View } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import type { GestureResponderEvent, LayoutChangeEvent } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import {
   buildContributionGrid,
@@ -19,9 +19,16 @@ export interface ContributionGraphProps {
   endDate?: Date;
   /** 0 = Sunday-start weeks (default), 1 = Monday-start weeks. */
   weekStartsOn?: 0 | 1;
-  /** Side length of each square day cell, in dp. Defaults to 12. */
+  /**
+   * Side length of each square day cell, in dp. When omitted (the default),
+   * the graph measures its own width and derives a cell size that makes
+   * `weeks` columns exactly fill it — the common case of a graph that
+   * should span its container edge-to-edge rather than floating at a fixed
+   * pixel size. Pass an explicit value to opt out (e.g. a dense, scrollable
+   * multi-month view where cells shouldn't grow with the viewport).
+   */
   cellSize?: number;
-  /** Gap between cells, in dp. Defaults to 3. */
+  /** Gap between cells, in dp. Defaults to ~18% of the resolved cell size. */
   cellGap?: number;
   /** Corner radius of each cell, in dp. Defaults to 3. */
   cellRadius?: number;
@@ -59,8 +66,8 @@ export function ContributionGraph({
   weeks,
   endDate,
   weekStartsOn,
-  cellSize = DEFAULT_CELL_SIZE,
-  cellGap = DEFAULT_CELL_GAP,
+  cellSize: explicitCellSize,
+  cellGap: explicitCellGap,
   cellRadius = DEFAULT_CELL_RADIUS,
   emptyColor = DEFAULT_EMPTY_COLOR,
   fillColor = DEFAULT_FILL_COLOR,
@@ -72,8 +79,27 @@ export function ContributionGraph({
     [data, weeks, endDate, weekStartsOn]
   );
 
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  const handleContainerLayout = useCallback((event: LayoutChangeEvent) => {
+    setMeasuredWidth(event.nativeEvent.layout.width);
+  }, []);
+
+  // Auto-fill mode (no explicit cellSize): derive a cell size that makes
+  // `weeks` columns exactly span the measured container width, so the graph
+  // reads as a full-width chart instead of floating at a fixed pixel size
+  // regardless of screen width. Falls back to the fixed default until the
+  // first layout pass reports a real width.
+  const autoStep = weeks > 0 && measuredWidth > 0 ? measuredWidth / weeks : 0;
+  const cellGap =
+    explicitCellGap ?? (autoStep > 0 ? Math.min(6, Math.max(2, autoStep * 0.16)) : DEFAULT_CELL_GAP);
+  const cellSize =
+    explicitCellSize ?? (autoStep > 0 ? Math.max(1, autoStep - cellGap) : DEFAULT_CELL_SIZE);
+
   const step = cellSize + cellGap;
-  const width = Math.max(0, grid.length * step - cellGap);
+  const width =
+    explicitCellSize !== undefined || measuredWidth === 0
+      ? Math.max(0, grid.length * step - cellGap)
+      : measuredWidth;
   const height = grid.length > 0 ? 7 * step - cellGap : 0;
 
   const secondaryRadius = Math.max(1.5, cellSize * 0.18);
@@ -95,47 +121,53 @@ export function ContributionGraph({
   );
 
   return (
-    <View
-      style={{ width, height }}
-      onStartShouldSetResponder={() => !!onDayPress}
-      onResponderRelease={handleTap}
-    >
-      <Canvas style={{ width, height }}>
-        {grid.map((column) =>
-          column.map((cell) => {
-            const x = cell.weekIndex * step;
-            const y = cell.dayOfWeek * step;
-            const primary = clamp01(cell.intensity?.primary ?? 0);
-            const hasFill = primary > 0;
-            const showSecondary = cell.intensity?.secondary === true;
+    <View style={styles.measureContainer} onLayout={handleContainerLayout}>
+      <View
+        style={{ width, height }}
+        onStartShouldSetResponder={() => !!onDayPress}
+        onResponderRelease={handleTap}
+      >
+        <Canvas style={{ width, height }}>
+          {grid.map((column) =>
+            column.map((cell) => {
+              const x = cell.weekIndex * step;
+              const y = cell.dayOfWeek * step;
+              const primary = clamp01(cell.intensity?.primary ?? 0);
+              const hasFill = primary > 0;
+              const showSecondary = cell.intensity?.secondary === true;
 
-            return (
-              <Group key={cell.date}>
-                <RoundedRect
-                  x={x}
-                  y={y}
-                  width={cellSize}
-                  height={cellSize}
-                  r={cellRadius}
-                  color={hasFill ? fillColor : emptyColor}
-                  opacity={hasFill ? primary : 1}
-                />
-                {showSecondary ? (
-                  <Circle
-                    cx={x + cellSize - secondaryInset}
-                    cy={y + secondaryInset}
-                    r={secondaryRadius}
-                    color={secondaryColor}
+              return (
+                <Group key={cell.date}>
+                  <RoundedRect
+                    x={x}
+                    y={y}
+                    width={cellSize}
+                    height={cellSize}
+                    r={cellRadius}
+                    color={hasFill ? fillColor : emptyColor}
+                    opacity={hasFill ? primary : 1}
                   />
-                ) : null}
-              </Group>
-            );
-          })
-        )}
-      </Canvas>
+                  {showSecondary ? (
+                    <Circle
+                      cx={x + cellSize - secondaryInset}
+                      cy={y + secondaryInset}
+                      r={secondaryRadius}
+                      color={secondaryColor}
+                    />
+                  ) : null}
+                </Group>
+              );
+            })
+          )}
+        </Canvas>
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  measureContainer: { width: "100%" },
+});
 
 /** Maps a tap's local (x, y) to the grid cell it landed in, or `null` if it landed in a gap. */
 function locateCell(

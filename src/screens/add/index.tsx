@@ -1,12 +1,18 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 
+import { SegmentedControl } from "@/components/segmented-control";
 import { useAppMaterialColors } from "@/theme/material-colors";
 
 import { CreateTrackerForm } from "./create-tracker-form";
 import { LogEntryForm } from "./log-entry-form";
 
 type AddMode = "log" | "create";
+
+const MODE_OPTIONS = [
+  { value: "log" as const, label: "Log Entry" },
+  { value: "create" as const, label: "New Tracker" },
+];
 
 /**
  * Add modal screen (rendered from `src/app/add.tsx`, a formSheet route
@@ -29,74 +35,21 @@ export default function AddScreen() {
   const [mode, setMode] = useState<AddMode>("log");
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface }]}>
-      <View style={[styles.segmented, { borderColor: colors.outlineVariant }]}>
-        <SegmentButton
-          label="Log Entry"
-          active={mode === "log"}
-          onPress={() => setMode("log")}
-        />
-        <SegmentButton
-          label="New Tracker"
-          active={mode === "create"}
-          onPress={() => setMode("create")}
-        />
-      </View>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: colors.surface }]}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "android" ? 24 : 0}
+    >
+      <SegmentedControl options={MODE_OPTIONS} value={mode} onChange={setMode} />
       {mode === "log" ? (
         <LogEntryForm />
       ) : (
         <CreateTrackerForm onCreated={() => setMode("log")} />
       )}
-    </View>
-  );
-}
-
-function SegmentButton({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  const colors = useAppMaterialColors();
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        styles.segmentButton,
-        active && { backgroundColor: colors.secondaryContainer },
-      ]}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-    >
-      <Text
-        style={[
-          styles.segmentLabel,
-          { color: active ? colors.onSecondaryContainer : colors.onSurfaceVariant },
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, gap: 16 },
-  segmented: {
-    flexDirection: "row",
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 4,
-    gap: 4,
-  },
-  segmentButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  segmentLabel: { fontSize: 14, fontWeight: "600" },
 });
