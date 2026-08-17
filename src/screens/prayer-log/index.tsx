@@ -1,5 +1,7 @@
+import { Host, Icon } from "@expo/ui";
+import MosqueIcon from "@expo/material-symbols/mosque.xml";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { getDb } from "@/db/client";
@@ -18,6 +20,11 @@ import { useAppMaterialColors } from "@/theme/material-colors";
 import type { EntryWithValues, Tracker, TrackerField } from "@/types";
 
 import { PrayerRow } from "./prayer-row";
+
+const RELIGION_COLOR = "#00695C";
+// Static import, not `Icon.select` — see the matching note in
+// `prayer-row.tsx`.
+const MOSQUE_ICON = MosqueIcon;
 
 const PRAYER_ORDER = ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const;
 type PrayerKey = (typeof PRAYER_ORDER)[number];
@@ -194,6 +201,17 @@ export function PrayerLogScreen() {
     }
   }, [tracker, rows, toggles, existingEntry, router]);
 
+  const progress = useMemo(() => {
+    const fardDone = rows.filter((row) => toggles[row.fard.id] === true).length;
+    const sunnahDone = rows.filter((row) => toggles[row.sunnah.id] === true).length;
+    return { fardDone, sunnahDone, total: rows.length };
+  }, [rows, toggles]);
+
+  const todayLabel = useMemo(
+    () => new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }),
+    []
+  );
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -217,9 +235,24 @@ export function PrayerLogScreen() {
       style={[styles.container, { backgroundColor: colors.surface }]}
       contentContainerStyle={styles.content}
     >
+      <View style={styles.header}>
+        <View style={[styles.headerIcon, { backgroundColor: `${RELIGION_COLOR}1F` }]}>
+          <Host matchContents>
+            <Icon name={MOSQUE_ICON} size={26} color={RELIGION_COLOR} />
+          </Host>
+        </View>
+        <View style={styles.headerText}>
+          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>{todayLabel}</Text>
+          <Text style={[styles.headerProgress, { color: RELIGION_COLOR }]}>
+            {progress.fardDone}/{progress.total} fard · {progress.sunnahDone}/{progress.total} sunnah
+          </Text>
+        </View>
+      </View>
+
       {rows.map((row) => (
         <PrayerRow
           key={row.key}
+          prayerKey={row.key}
           heading={row.heading}
           fardValue={toggles[row.fard.id] ?? false}
           onFardChange={(next) => handleToggle(row.fard.id, next)}
@@ -236,12 +269,10 @@ export function PrayerLogScreen() {
         disabled={isSaving}
         style={[
           styles.saveButton,
-          { backgroundColor: colors.primary, opacity: isSaving ? 0.6 : 1 },
+          { backgroundColor: RELIGION_COLOR, opacity: isSaving ? 0.6 : 1 },
         ]}
       >
-        <Text style={[styles.saveButtonLabel, { color: colors.onPrimary }]}>
-          {isSaving ? "Saving…" : "Save"}
-        </Text>
+        <Text style={styles.saveButtonLabel}>{isSaving ? "Saving…" : "Save"}</Text>
       </Pressable>
     </ScrollView>
   );
@@ -249,8 +280,30 @@ export function PrayerLogScreen() {
 
 const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: "center", justifyContent: "center" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 4,
+  },
+  headerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerText: { gap: 2 },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  headerProgress: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
   container: { flex: 1 },
   content: { padding: 16, gap: 12, paddingBottom: 32 },
   saveButton: { borderRadius: 10, paddingVertical: 12, alignItems: "center", marginTop: 8 },
-  saveButtonLabel: { fontSize: 16, fontWeight: "700" },
+  saveButtonLabel: { fontSize: 16, fontWeight: "700", color: "#FFFFFF" },
 });
