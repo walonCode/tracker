@@ -1,6 +1,8 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { HistoryEntryItem } from "@/hooks/use-history";
+import { todayLocalDateKey } from "@/lib/dates";
 import { DOMAIN_PALETTE } from "@/theme/domain-palette";
 import { useAppMaterialColors } from "@/theme/material-colors";
 import type { EntryValue, EntryWithValues, TrackerField } from "@/types";
@@ -71,9 +73,18 @@ export interface EntryRowProps {
  * generic per-field dump — 10 separate "Fajr (Fard): Yes" lines would be
  * noisy for a fixed 10-boolean-field tracker. Falls back to the generic dump
  * if the tracker was hard-deleted (`tracker` is `null`, `kind` unknown).
+ *
+ * Tappable: opens the entry in the Add modal's edit mode
+ * (`log-entry-form.tsx` via `?entryId=`) to fix a mistake or delete it.
+ * Prayer entries route to the dedicated `/prayer-log` editor instead — but
+ * only for *today's* entry, since that screen always operates on "today"
+ * (see its own doc comment); a past-dated prayer entry has no edit UI yet
+ * and the row is inert. Deleted-tracker rows (`tracker` is `null`) are
+ * also inert — there's nothing left to edit.
  */
 export function EntryRow({ item }: EntryRowProps) {
   const colors = useAppMaterialColors();
+  const router = useRouter();
   const { entry, tracker, domain } = item;
   const domainColor = domain ? DOMAIN_PALETTE[domain.key].color : colors.outline;
   const trackerName = tracker?.name ?? "Deleted tracker";
@@ -86,8 +97,23 @@ export function EntryRow({ item }: EntryRowProps) {
           .filter((line) => line.length > 0)
           .join("   ·   ");
 
+  const isEditablePrayerEntry = tracker?.kind === "prayer" && entry.localDate === todayLocalDateKey();
+  const isEditable = tracker !== null && (tracker.kind !== "prayer" || isEditablePrayerEntry);
+  const handlePress = () => {
+    if (!isEditable) return;
+    if (tracker?.kind === "prayer") {
+      router.push("/prayer-log");
+    } else {
+      router.push({ pathname: "/add", params: { entryId: String(entry.id) } });
+    }
+  };
+
   return (
-    <View style={[styles.row, { borderBottomColor: colors.outlineVariant }]}>
+    <Pressable
+      onPress={handlePress}
+      disabled={!isEditable}
+      style={[styles.row, { borderBottomColor: colors.outlineVariant }]}
+    >
       <View style={styles.header}>
         <View style={[styles.domainDot, { backgroundColor: domainColor }]} />
         <Text
@@ -114,7 +140,7 @@ export function EntryRow({ item }: EntryRowProps) {
           {entry.note}
         </Text>
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 

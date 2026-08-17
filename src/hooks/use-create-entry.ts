@@ -10,6 +10,14 @@ export interface CreateEntryDraftInput {
   trackerId: number;
   note?: string | null;
   values: CreateEntryValueInput[];
+  /**
+   * Which local day to log against. Defaults to "right now" when omitted —
+   * pass an explicit date to backdate an entry (e.g. logging something
+   * forgotten yesterday). `occurredAt` always reflects the actual moment of
+   * saving; only the calendar day (`localDate`) is backdated, matching how
+   * every other reader in this codebase groups by `localDate`.
+   */
+  date?: Date;
 }
 
 export interface UseCreateEntryResult {
@@ -19,10 +27,9 @@ export interface UseCreateEntryResult {
 }
 
 /**
- * Saves a new entry for "right now" — `occurredAt`/`localDate` are derived
- * from the current moment via `@/lib/dates` at save time (per the task
- * brief), so callers only supply the tracker id, optional note, and the
- * per-field values collected by the log-entry form.
+ * Saves a new entry. `occurredAt` is always derived from the current moment
+ * via `@/lib/dates`; `localDate` defaults to today but can be overridden via
+ * `date` to backdate an entry to an earlier day.
  */
 export function useCreateEntry(): UseCreateEntryResult {
   const [isSaving, setIsSaving] = useState(false);
@@ -38,7 +45,7 @@ export function useCreateEntry(): UseCreateEntryResult {
         return await createEntry(db, {
           trackerId: input.trackerId,
           occurredAt: now.toISOString(),
-          localDate: toLocalDateKey(now),
+          localDate: toLocalDateKey(input.date ?? now),
           note: input.note ?? null,
           values: input.values,
         });

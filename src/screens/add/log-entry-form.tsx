@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,15 +12,35 @@ import {
 } from "react-native";
 
 import { emptyFieldDraftValue, FieldInput, type FieldDraftValue } from "@/components/field-input";
+import { DateField } from "@/components/date-field";
 import { getDb } from "@/db/client";
-import { listDomains, listTrackerFields, listTrackers } from "@/db/repositories";
+import {
+  getEntryWithValues,
+  listDomains,
+  listTrackerFields,
+  listTrackers,
+} from "@/db/repositories";
 import { useCreateEntry } from "@/hooks/use-create-entry";
+import { useUpdateEntry } from "@/hooks/use-update-entry";
+import { parseLocalDateKey } from "@/lib/dates";
 import { DOMAIN_PALETTE } from "@/theme/domain-palette";
 import { useAppMaterialColors } from "@/theme/material-colors";
 import type { Domain, Tracker, TrackerField } from "@/types";
 
+export interface LogEntryFormProps {
+  /** Pre-selects a tracker for a *new* entry (skips the picker screen). Ignored when `entryId` is set. */
+  initialTrackerId?: number;
+  /** Edit-in-place mode: loads the existing entry's tracker/fields/note/date instead of starting a new one. */
+  entryId?: number;
+}
+
 /**
- * "Log Entry" mode: pick a tracker, fill its fields, save.
+ * "Log Entry" mode: pick a tracker, fill its fields, save. Also doubles as
+ * the entry editor (History's "tap an entry to fix it" flow, `entryId`) and
+ * the pre-selected quick-log path (Today's checklist routing a
+ * non-boolean-only tracker here instead of silently writing a valueless
+ * entry, `initialTrackerId`) — both skip straight to the field-filling
+ * form below instead of showing the tracker picker.
  *
  * The tracker list intentionally never includes a `kind === "project_time"`
  * row (Projects UI doesn't exist yet — see the task brief) and shows the
@@ -29,10 +50,14 @@ import type { Domain, Tracker, TrackerField } from "@/types";
  * field-filling form below, since the prayer tracker has its own dedicated
  * entry point.
  */
-export function LogEntryForm() {
+export function LogEntryForm({ initialTrackerId, entryId }: LogEntryFormProps) {
   const colors = useAppMaterialColors();
   const router = useRouter();
-  const { saveEntry, isSaving, error } = useCreateEntry();
+  const { saveEntry, isSaving: isCreating, error: createError } = useCreateEntry();
+  const { saveEdit, removeEntry, isSaving: isUpdating, error: updateError } = useUpdateEntry();
+  const isEditing = entryId !== undefined;
+  const isSaving = isCreating || isUpdating;
+  const error = createError ?? updateError;
 
   const [isLoading, setIsLoading] = useState(true);
   const [trackers, setTrackers] = useState<Tracker[]>([]);
@@ -42,6 +67,7 @@ export function LogEntryForm() {
   const [fields, setFields] = useState<TrackerField[]>([]);
   const [note, setNote] = useState("");
   const [values, setValues] = useState<Record<number, FieldDraftValue>>({});
+  const [date, setDate] = useState(() => new Date());
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,12 +81,57 @@ export function LogEntryForm() {
       if (cancelled) return;
       setTrackers(allTrackers);
       setDomainsById(new Map(allDomains.map((d) => [d.id, d])));
+
+      if (entryId !== undefined) {
+        const entry = await getEntryWithValues(db, entryId);
+        if (cancelled || !entry) {
+          setIsLoading(false);
+          return;
+        }
+        const tracker = allTrackers.find((t) => t.id === entry.trackerId) ?? null;
+        const trackerFields = tracker ? await listTrackerFields(db, tracker.id) : [];
+        if (cancelled) return;
+        setSelectedTracker(tracker);
+        setFields(trackerFields);
+        setNote(entry.note ?? "");
+        setDate(parseLocalDateKey(entry.localDate));
+        const valueByField = new Map(entry.values.map((v) => [v.fieldId, v]));
+        setValues(
+          Object.fromEntries(
+            trackerFields.map((f) => {
+              const existing = valueByField.get(f.id);
+              return [
+                f.id,
+                existing
+                  ? {
+                      valueNumber: existing.valueNumber,
+                      valueText: existing.valueText,
+                      valueBoolean: existing.valueBoolean,
+                    }
+                  : emptyFieldDraftValue(),
+              ];
+            })
+          )
+        );
+      } else if (initialTrackerId !== undefined) {
+        const tracker = allTrackers.find((t) => t.id === initialTrackerId) ?? null;
+        if (tracker && tracker.kind !== "prayer") {
+          const trackerFields = await listTrackerFields(db, tracker.id);
+          if (cancelled) return;
+          setSelectedTracker(tracker);
+          setFields(trackerFields);
+          setValues(
+            Object.fromEntries(trackerFields.map((f) => [f.id, emptyFieldDraftValue()]))
+          );
+        }
+      }
+
       setIsLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [entryId, initialTrackerId]);
 
   const prayerTracker = useMemo(
     () => trackers.find((t) => t.kind === "prayer") ?? null,
@@ -102,21 +173,56 @@ export function LogEntryForm() {
       return;
     }
 
-    await saveEntry({
-      trackerId: selectedTracker.id,
-      note: note.trim() === "" ? null : note.trim(),
-      values: fields.map((f) => ({
-        fieldId: f.id,
-        ...(values[f.id] ?? emptyFieldDraftValue()),
-      })),
-    });
+    const entryValues = fields.map((f) => ({
+      fieldId: f.id,
+      ...(values[f.id] ?? emptyFieldDraftValue()),
+    }));
+
+    if (isEditing && entryId !== undefined) {
+      await saveEdit({
+        entryId,
+        note: note.trim() === "" ? null : note.trim(),
+        values: entryValues,
+        date,
+      });
+    } else {
+      await saveEntry({
+        trackerId: selectedTracker.id,
+        note: note.trim() === "" ? null : note.trim(),
+        values: entryValues,
+        date,
+      });
+    }
     router.back();
-  }, [selectedTracker, fields, values, note, saveEntry, router]);
+  }, [selectedTracker, fields, values, note, date, isEditing, entryId, saveEdit, saveEntry, router]);
+
+  const handleDelete = useCallback(() => {
+    if (entryId === undefined) return;
+    Alert.alert("Delete entry?", "This can't be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          await removeEntry(entryId);
+          router.back();
+        },
+      },
+    ]);
+  }, [entryId, removeEntry, router]);
 
   if (isLoading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (isEditing && !selectedTracker) {
+    return (
+      <View style={styles.centered}>
+        <Text style={{ color: colors.error }}>Couldn&apos;t load this entry.</Text>
       </View>
     );
   }
@@ -171,12 +277,19 @@ export function LogEntryForm() {
 
   return (
     <ScrollView style={styles.list} contentContainerStyle={styles.listContent} keyboardShouldPersistTaps="handled">
-      <Pressable onPress={() => setSelectedTracker(null)}>
-        <Text style={{ color: colors.primary }}>{"← Choose a different tracker"}</Text>
-      </Pressable>
+      {isEditing ? null : (
+        <Pressable onPress={() => setSelectedTracker(null)}>
+          <Text style={{ color: colors.primary }}>{"← Choose a different tracker"}</Text>
+        </Pressable>
+      )}
       <Text style={[styles.formTitle, { color: colors.onSurface }]}>
         {selectedTracker.name}
       </Text>
+
+      <View style={styles.fieldGroup}>
+        <Text style={[styles.fieldLabel, { color: colors.onSurfaceVariant }]}>Date</Text>
+        <DateField value={date} onChange={setDate} />
+      </View>
 
       {fields.map((field) => (
         <View key={field.id} style={styles.fieldGroup}>
@@ -223,9 +336,15 @@ export function LogEntryForm() {
         ]}
       >
         <Text style={[styles.saveButtonLabel, { color: colors.onPrimary }]}>
-          {isSaving ? "Saving…" : "Save Entry"}
+          {isSaving ? "Saving…" : isEditing ? "Save Changes" : "Save Entry"}
         </Text>
       </Pressable>
+
+      {isEditing ? (
+        <Pressable onPress={handleDelete} disabled={isSaving} style={styles.deleteButton}>
+          <Text style={[styles.deleteButtonLabel, { color: colors.error }]}>Delete Entry</Text>
+        </Pressable>
+      ) : null}
     </ScrollView>
   );
 }
@@ -252,4 +371,6 @@ const styles = StyleSheet.create({
   },
   saveButton: { borderRadius: 10, paddingVertical: 12, alignItems: "center", marginTop: 8 },
   saveButtonLabel: { fontSize: 16, fontWeight: "700" },
+  deleteButton: { paddingVertical: 12, alignItems: "center" },
+  deleteButtonLabel: { fontSize: 14, fontWeight: "600" },
 });

@@ -254,6 +254,19 @@ export async function updateEntryNote(
   await db.runAsync("UPDATE entries SET note = ? WHERE id = ?", [note, entryId]);
 }
 
+/** Moves an existing entry to a different occurred_at/local_date (e.g. backdating). */
+export async function updateEntryDate(
+  db: SQLiteDatabase,
+  entryId: number,
+  occurredAt: string,
+  localDate: string
+): Promise<void> {
+  await db.runAsync(
+    "UPDATE entries SET occurred_at = ?, local_date = ? WHERE id = ?",
+    [occurredAt, localDate, entryId]
+  );
+}
+
 /** Hard delete. Cascades to entry_values. */
 export async function deleteEntry(db: SQLiteDatabase, entryId: number): Promise<void> {
   await db.runAsync("DELETE FROM entries WHERE id = ?", entryId);
