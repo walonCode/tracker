@@ -101,6 +101,7 @@ export function TodayScreen() {
                     key={item.tracker.id}
                     tracker={item.tracker}
                     domain={item.domain}
+                    fields={item.fields}
                     checked={item.checked}
                     progress={item.progress}
                     onToggle={() => handleToggle(item.tracker.id)}

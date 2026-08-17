@@ -53,10 +53,12 @@ export interface UseDailyChecklistResult {
   items: DailyChecklistItem[];
   /**
    * Toggles a non-prayer tracker's "done today" state: logs a minimal entry
-   * (boolean fields set true, other field types left unset — this phase has
-   * no data-entry form yet, see task-7) if unchecked, or deletes today's
-   * entries for the tracker if checked. No-ops for `kind: "prayer"` — that
-   * row routes to `/prayer-log` instead (see `checklist-row.tsx`).
+   * (every boolean field set true) if unchecked, or deletes today's entries
+   * for the tracker if checked. Only meant to be called for a tracker whose
+   * fields are all boolean — a tracker with any other field type has nothing
+   * meaningful to set here and routes to the full log-entry form instead
+   * (see `checklist-row.tsx`'s `needsForm`). No-ops for `kind: "prayer"` —
+   * that row routes to `/prayer-log` instead.
    */
   toggleTracker: (trackerId: number) => Promise<void>;
   refresh: () => Promise<void>;

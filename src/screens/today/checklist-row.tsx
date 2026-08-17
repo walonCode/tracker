@@ -3,13 +3,14 @@ import { router } from "expo-router";
 
 import type { PrayerProgress } from "@/hooks/use-daily-checklist";
 import { DOMAIN_PALETTE } from "@/theme/domain-palette";
-import type { Domain, Tracker } from "@/types";
+import type { Domain, Tracker, TrackerField } from "@/types";
 
 const FALLBACK_DOMAIN_COLOR = DOMAIN_PALETTE.religion.color;
 
 export interface ChecklistRowProps {
   tracker: Tracker;
   domain: Domain | undefined;
+  fields: TrackerField[];
   checked: boolean;
   /** Fard/sunnah split, `kind: "prayer"` rows only — see `PrayerProgress`. */
   progress: PrayerProgress | null;
@@ -37,8 +38,23 @@ export interface ChecklistRowProps {
  * is behind) and routes to `/prayer-log` on tap (that screen owns actually
  * recording fard/sunnah completion — out of scope here, see the
  * `src/screens/prayer-log` sibling).
+ *
+ * A tracker with any non-boolean field (a number, duration, text, or scale
+ * value to fill in) can't be safely instant-toggled the way a plain
+ * boolean-only tracker can — there's no value to record. Checking such a row
+ * while it's unchecked routes to the full log-entry form (`/add?trackerId=`)
+ * instead of calling `onToggle`, which would otherwise silently create an
+ * entry with none of its values set. Unchecking (removing today's entry) has
+ * no such ambiguity and always calls `onToggle` directly.
  */
-export function ChecklistRow({ tracker, domain, checked, progress, onToggle }: ChecklistRowProps) {
+export function ChecklistRow({
+  tracker,
+  domain,
+  fields,
+  checked,
+  progress,
+  onToggle,
+}: ChecklistRowProps) {
   const supportingText = domain?.label;
 
   if (tracker.kind === "prayer") {
@@ -61,10 +77,19 @@ export function ChecklistRow({ tracker, domain, checked, progress, onToggle }: C
     );
   }
 
+  const needsForm = !checked && fields.some((f) => f.type !== "boolean");
+  const handlePress = () => {
+    if (needsForm) {
+      router.push({ pathname: "/add", params: { trackerId: String(tracker.id) } });
+    } else {
+      onToggle();
+    }
+  };
+
   return (
     <ListItem
-      onPress={onToggle}
-      leading={<Checkbox value={checked} onValueChange={onToggle} />}
+      onPress={handlePress}
+      leading={<Checkbox value={checked} onValueChange={handlePress} />}
       supportingText={supportingText}
     >
       {tracker.name}
