@@ -12,13 +12,38 @@
 // instead.
 import "expo-router/entry";
 
+import { AppState, Platform } from "react-native";
 import {
   registerWidgetConfigurationScreen,
   registerWidgetTaskHandler,
 } from "react-native-android-widget";
 
 import WidgetConfigScreen from "./src/app/widget-config";
+import { syncAllIosWidgets } from "./src/widgets/ios-sync";
 import { widgetTaskHandler } from "./src/widgets/widget-task-handler";
 
 registerWidgetTaskHandler(widgetTaskHandler);
 registerWidgetConfigurationScreen(WidgetConfigScreen);
+
+// iOS has no equivalent of the headless task handler above — a WidgetKit
+// `TimelineProvider` runs in its own extension process and can't be handed
+// a JS render function (see `src/widgets/ios-sync.ts` for the full
+// rationale). Instead we push a JSON snapshot into the shared App Group
+// container at the moments the user is most likely about to look at their
+// home screen — app launch and every foreground/background transition —
+// and WidgetKit reloads from that snapshot. `syncAllIosWidgets` itself is a
+// no-op on non-iOS platforms, but the `AppState` listener is skipped
+// entirely on Android/web to avoid the extra subscription for no reason.
+if (Platform.OS === "ios") {
+  syncAllIosWidgets().catch((error) => {
+    console.warn("[ios-sync] initial sync failed", error);
+  });
+
+  AppState.addEventListener("change", (state) => {
+    if (state === "active" || state === "background") {
+      syncAllIosWidgets().catch((error) => {
+        console.warn("[ios-sync] AppState sync failed", error);
+      });
+    }
+  });
+}

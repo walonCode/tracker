@@ -3,6 +3,7 @@
   "main": "index.ts",
   "version": "1.0.0",
   "dependencies": {
+    "@bacons/apple-targets": "^5.0.0",
     "@expo/material-symbols": "^0.1.1",
     "@expo/ui": "~57.0.10",
     "@shopify/react-native-skia": "2.6.2",
