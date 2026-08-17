@@ -1,5 +1,4 @@
 import { Host, Icon } from "@expo/ui";
-import MosqueIcon from "@expo/material-symbols/mosque.xml";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -22,9 +21,12 @@ import type { EntryWithValues, Tracker, TrackerField } from "@/types";
 import { PrayerRow } from "./prayer-row";
 
 const RELIGION_COLOR = "#00695C";
-// Static import, not `Icon.select` — see the matching note in
-// `prayer-row.tsx`.
-const MOSQUE_ICON = MosqueIcon;
+// `Icon.select` with `require()`, not a static default import — see the
+// matching note in `prayer-row.tsx`.
+const MOSQUE_ICON = Icon.select({
+  ios: "building.columns",
+  android: require("@expo/material-symbols/mosque.xml"),
+});
 
 const PRAYER_ORDER = ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const;
 type PrayerKey = (typeof PRAYER_ORDER)[number];

@@ -1,9 +1,4 @@
 import { Host, Icon } from "@expo/ui";
-import FajrIcon from "@expo/material-symbols/wb_twilight.xml";
-import DhuhrIcon from "@expo/material-symbols/wb_sunny.xml";
-import AsrIcon from "@expo/material-symbols/clear_day.xml";
-import MaghribIcon from "@expo/material-symbols/wb_shade.xml";
-import IshaIcon from "@expo/material-symbols/bedtime.xml";
 import { useEffect, useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
@@ -17,19 +12,19 @@ import type { MaterialColors } from "@/theme/material-colors";
 
 const RELIGION_COLOR = "#00695C";
 
-// Statically imported (Android-only asset requires) rather than
-// `Icon.select({ android: import('*.xml') })` — this app is Android-only
-// today, and the dynamic-import form depends on `@expo/ui`'s babel plugin
-// rewriting it into a `require()`; that rewrite wasn't firing in practice
-// (icons silently rendered blank, no error), whereas a plain static import
-// is the same pattern `tab-bar/index.android.tsx` already uses and is
-// confirmed working.
+// `Icon.select` with a synchronous `require()` for the android slot, not
+// `import('*.xml')` — the dynamic-import form depends on `@expo/ui`'s babel
+// plugin rewriting it, which wasn't firing in practice (icons silently
+// rendered blank, no error). `require()` sidesteps that and is resolved
+// eagerly by Metro like any other asset. This also restores real SF Symbol
+// icons on iOS, which the earlier Android-only static-import version had
+// dropped entirely.
 const PRAYER_ICONS = {
-  fajr: FajrIcon,
-  dhuhr: DhuhrIcon,
-  asr: AsrIcon,
-  maghrib: MaghribIcon,
-  isha: IshaIcon,
+  fajr: Icon.select({ ios: "sunrise", android: require("@expo/material-symbols/wb_twilight.xml") }),
+  dhuhr: Icon.select({ ios: "sun.max", android: require("@expo/material-symbols/wb_sunny.xml") }),
+  asr: Icon.select({ ios: "cloud.sun", android: require("@expo/material-symbols/clear_day.xml") }),
+  maghrib: Icon.select({ ios: "sunset", android: require("@expo/material-symbols/wb_shade.xml") }),
+  isha: Icon.select({ ios: "moon.stars", android: require("@expo/material-symbols/bedtime.xml") }),
 } as const;
 
 export type PrayerIconKey = keyof typeof PRAYER_ICONS;
