@@ -48,7 +48,8 @@
               "targetCellWidth": 4,
               "targetCellHeight": 2,
               "resizeMode": "horizontal|vertical",
-              "widgetFeatures": "reconfigurable"
+              "widgetFeatures": "reconfigurable",
+              "previewImage": "./assets/images/widget-preview-contribution-graph.png"
             },
             {
               "name": "ProjectTime",
@@ -59,7 +60,20 @@
               "targetCellWidth": 3,
               "targetCellHeight": 2,
               "resizeMode": "horizontal|vertical",
-              "widgetFeatures": "reconfigurable"
+              "widgetFeatures": "reconfigurable",
+              "previewImage": "./assets/images/widget-preview-project-time.png"
+            },
+            {
+              "name": "Prayer",
+              "label": "Prayer",
+              "description": "Today's fard/sunnah status for each of the five daily prayers.",
+              "minWidth": "220dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetFeatures": "reconfigurable",
+              "previewImage": "./assets/images/widget-preview-prayer.png"
             }
           ]
         }

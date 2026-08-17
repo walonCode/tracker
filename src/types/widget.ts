@@ -1,4 +1,4 @@
-export type WidgetContentType = "contribution_graph" | "project_time";
+export type WidgetContentType = "contribution_graph" | "project_time" | "prayer";
 
 /**
  * Per-widget-instance configuration, persisted as JSON in

@@ -17,18 +17,23 @@ import { getDb } from "@/db/client";
 import { listProjects, listTrackers, upsertWidgetInstance } from "@/db/repositories";
 import { ensureSeeded } from "@/db/seed-once";
 import { ContributionGraphWidget } from "@/widgets/contribution-graph-widget";
+import { PrayerWidget } from "@/widgets/prayer-widget";
 import { ProjectTimeWidget } from "@/widgets/project-time-widget";
 import {
   DEFAULT_CONTRIBUTION_RANGE_DAYS,
   DEFAULT_PROJECT_TIME_RANGE_DAYS,
   fetchContributionGraphWidgetData,
+  fetchPrayerWidgetData,
   fetchProjectTimeWidgetData,
   type ContributionGraphWidgetData,
+  type PrayerWidgetData,
   type ProjectTimeWidgetData,
 } from "@/widgets/widget-data";
 import type { Project, Tracker, WidgetContentType, WidgetInstanceOptions } from "@/types";
 
-import { ContributionGraphPreview, ProjectTimePreview } from "./widget-preview";
+import { ContributionGraphPreview, PrayerPreview, ProjectTimePreview } from "./widget-preview";
+
+type WidgetPreviewData = ContributionGraphWidgetData | ProjectTimeWidgetData | PrayerWidgetData;
 
 const CONTRIBUTION_RANGE_OPTIONS = [7, 14, 28] as const;
 const PROJECT_RANGE_OPTIONS = [7, 30, 90] as const;
@@ -84,7 +89,9 @@ interface WidgetConfigFormProps {
  * persisted to `widget_instances` keyed by `widgetInfo.widgetId`.
  */
 function contentTypeForWidgetName(widgetName: string): WidgetContentType {
-  return widgetName === "ProjectTime" ? "project_time" : "contribution_graph";
+  if (widgetName === "ProjectTime") return "project_time";
+  if (widgetName === "Prayer") return "prayer";
+  return "contribution_graph";
 }
 
 function WidgetConfigForm({ widgetInfo, renderWidget, setResult }: WidgetConfigFormProps) {
@@ -111,12 +118,14 @@ function WidgetConfigForm({ widgetInfo, renderWidget, setResult }: WidgetConfigF
       if (contentType === "project_time") {
         const activeProjects = await listProjects(db, { status: "active" });
         if (!cancelled) setProjects(activeProjects);
-      } else {
+      } else if (contentType === "contribution_graph") {
         const dailyTrackers = (await listTrackers(db, {})).filter(
           (t) => t.frequency === "daily"
         );
         if (!cancelled) setTrackers(dailyTrackers);
       }
+      // "prayer" has nothing to load — there's only one prayer tracker and
+      // it's always "today", no picker needed.
       if (!cancelled) setLoading(false);
     })().catch(() => {
       if (!cancelled) setLoading(false);
@@ -129,15 +138,14 @@ function WidgetConfigForm({ widgetInfo, renderWidget, setResult }: WidgetConfigF
 
   const options: WidgetInstanceOptions = useMemo(() => {
     if (contentType === "project_time") return { projectId, rangeDays };
+    if (contentType === "prayer") return {};
     return { trackerId, rangeDays };
   }, [contentType, projectId, trackerId, rangeDays]);
 
   // Live preview: re-fetches on every option change so the card at the top
   // always shows what the widget will actually look like once saved,
   // instead of making the user guess from the option rows alone.
-  const [previewData, setPreviewData] = useState<
-    ContributionGraphWidgetData | ProjectTimeWidgetData | null
-  >(null);
+  const [previewData, setPreviewData] = useState<WidgetPreviewData | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -146,7 +154,9 @@ function WidgetConfigForm({ widgetInfo, renderWidget, setResult }: WidgetConfigF
       const data =
         contentType === "project_time"
           ? await fetchProjectTimeWidgetData(options)
-          : await fetchContributionGraphWidgetData(options);
+          : contentType === "prayer"
+            ? await fetchPrayerWidgetData()
+            : await fetchContributionGraphWidgetData(options);
       if (!cancelled) setPreviewData(data);
     })().catch(() => {
       // Best-effort: a failed preview fetch just leaves the last-good
@@ -170,6 +180,9 @@ function WidgetConfigForm({ widgetInfo, renderWidget, setResult }: WidgetConfigF
       if (contentType === "project_time") {
         const data = await fetchProjectTimeWidgetData(options);
         renderWidget(<ProjectTimeWidget data={data} />);
+      } else if (contentType === "prayer") {
+        const data = await fetchPrayerWidgetData();
+        renderWidget(<PrayerWidget data={data} />);
       } else {
         const data = await fetchContributionGraphWidgetData(options);
         renderWidget(<ContributionGraphWidget data={data} />);
@@ -199,19 +212,22 @@ function WidgetConfigForm({ widgetInfo, renderWidget, setResult }: WidgetConfigF
 
   const rangeOptions =
     contentType === "project_time" ? PROJECT_RANGE_OPTIONS : CONTRIBUTION_RANGE_OPTIONS;
+  const titleByContentType: Record<WidgetContentType, string> = {
+    project_time: "Configure Project Time widget",
+    prayer: "Configure Prayer widget",
+    contribution_graph: "Configure Contribution Graph widget",
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>
-        {contentType === "project_time"
-          ? "Configure Project Time widget"
-          : "Configure Contribution Graph widget"}
-      </Text>
+      <Text style={styles.title}>{titleByContentType[contentType]}</Text>
 
       <Text style={styles.sectionLabel}>Preview</Text>
       {previewData ? (
         contentType === "project_time" ? (
           <ProjectTimePreview data={previewData as ProjectTimeWidgetData} />
+        ) : contentType === "prayer" ? (
+          <PrayerPreview data={previewData as PrayerWidgetData} />
         ) : (
           <ContributionGraphPreview data={previewData as ContributionGraphWidgetData} />
         )
@@ -221,51 +237,59 @@ function WidgetConfigForm({ widgetInfo, renderWidget, setResult }: WidgetConfigF
         </View>
       )}
 
-      {contentType === "contribution_graph" ? (
-        <>
-          <Text style={styles.sectionLabel}>Tracker</Text>
-          <OptionRow
-            label="All trackers (aggregate)"
-            selected={trackerId === undefined}
-            onPress={() => setTrackerId(undefined)}
-          />
-          {trackers.map((tracker) => (
-            <OptionRow
-              key={tracker.id}
-              label={tracker.kind === "prayer" ? `${tracker.name} (fard/sunnah)` : tracker.name}
-              selected={trackerId === tracker.id}
-              onPress={() => setTrackerId(tracker.id)}
-            />
-          ))}
-        </>
+      {contentType === "prayer" ? (
+        <Text style={styles.helperText}>
+          Always shows today&apos;s fard/sunnah status for the prayer tracker — nothing to configure.
+        </Text>
       ) : (
         <>
-          <Text style={styles.sectionLabel}>Project</Text>
-          <OptionRow
-            label="All active projects"
-            selected={projectId === undefined}
-            onPress={() => setProjectId(undefined)}
-          />
-          {projects.map((project) => (
+          {contentType === "contribution_graph" ? (
+            <>
+              <Text style={styles.sectionLabel}>Tracker</Text>
+              <OptionRow
+                label="All trackers (aggregate)"
+                selected={trackerId === undefined}
+                onPress={() => setTrackerId(undefined)}
+              />
+              {trackers.map((tracker) => (
+                <OptionRow
+                  key={tracker.id}
+                  label={tracker.kind === "prayer" ? `${tracker.name} (fard/sunnah)` : tracker.name}
+                  selected={trackerId === tracker.id}
+                  onPress={() => setTrackerId(tracker.id)}
+                />
+              ))}
+            </>
+          ) : (
+            <>
+              <Text style={styles.sectionLabel}>Project</Text>
+              <OptionRow
+                label="All active projects"
+                selected={projectId === undefined}
+                onPress={() => setProjectId(undefined)}
+              />
+              {projects.map((project) => (
+                <OptionRow
+                  key={project.id}
+                  label={project.title}
+                  selected={projectId === project.id}
+                  onPress={() => setProjectId(project.id)}
+                />
+              ))}
+            </>
+          )}
+
+          <Text style={styles.sectionLabel}>Range</Text>
+          {rangeOptions.map((days) => (
             <OptionRow
-              key={project.id}
-              label={project.title}
-              selected={projectId === project.id}
-              onPress={() => setProjectId(project.id)}
+              key={days}
+              label={`${days} days`}
+              selected={rangeDays === days}
+              onPress={() => setRangeDays(days)}
             />
           ))}
         </>
       )}
-
-      <Text style={styles.sectionLabel}>Range</Text>
-      {rangeOptions.map((days) => (
-        <OptionRow
-          key={days}
-          label={`${days} days`}
-          selected={rangeDays === days}
-          onPress={() => setRangeDays(days)}
-        />
-      ))}
 
       <View style={styles.actions}>
         <Pressable
@@ -361,6 +385,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#208AEF",
     fontWeight: "700",
+  },
+  helperText: {
+    fontSize: 13,
+    color: "#CAC4D0",
+    marginTop: 16,
+    lineHeight: 18,
   },
   previewPlaceholder: {
     minHeight: 108,

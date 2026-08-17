@@ -2,12 +2,17 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { clamp01 } from "@/lib/contribution-graph";
 
-import type { ContributionGraphWidgetData, ProjectTimeWidgetData } from "@/widgets/widget-data";
+import type {
+  ContributionGraphWidgetData,
+  PrayerWidgetData,
+  ProjectTimeWidgetData,
+} from "@/widgets/widget-data";
 
 /**
- * Plain-RN mirrors of the two actual home-screen widgets
- * (`src/widgets/contribution-graph-widget.tsx` / `project-time-widget.tsx`),
- * matching their layout and colors so this screen can show a live preview.
+ * Plain-RN mirrors of the three actual home-screen widgets
+ * (`src/widgets/contribution-graph-widget.tsx` / `project-time-widget.tsx` /
+ * `prayer-widget.tsx`), matching their layout and colors so this screen can
+ * show a live preview.
  * The real widgets render via `react-native-android-widget`'s
  * `FlexWidget`/`TextWidget` — headless primitives serialized to native
  * `RemoteViews`, not actual React Native views — so they can't be mounted
@@ -24,6 +29,8 @@ const EMPTY_COLOR = "#2A2A2E";
 const SECONDARY_COLOR = "#F5C518";
 const FILL_COLOR = "#39D353";
 const PROJECT_ACCENT = "#208AEF";
+const RELIGION_COLOR = "#00695C";
+const RELIGION_EMPTY = "#33403E";
 
 const CELL_SIZE = 10;
 const CELL_GAP = 3;
@@ -92,6 +99,34 @@ export function ProjectTimePreview({ data }: { data: ProjectTimeWidgetData }) {
   );
 }
 
+export function PrayerPreview({ data }: { data: PrayerWidgetData }) {
+  return (
+    <View style={[styles.card, styles.prayerCard]}>
+      <View style={styles.prayerHeaderRow}>
+        <Text style={styles.title}>Prayer</Text>
+        <Text style={styles.prayerFardCount}>
+          {data.fardDone}/{data.total} fard
+        </Text>
+      </View>
+      <View style={styles.prayerDotsRow}>
+        {data.rows.map((row) => (
+          <View key={row.label} style={styles.prayerDotColumn}>
+            <View
+              style={[
+                styles.prayerDot,
+                { backgroundColor: row.fardDone ? RELIGION_COLOR : RELIGION_EMPTY },
+              ]}
+            >
+              {row.sunnahDone ? <View style={styles.prayerSecondaryDot} /> : null}
+            </View>
+            <Text style={styles.prayerDotLabel}>{row.label}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: WIDGET_BACKGROUND,
@@ -144,4 +179,35 @@ const styles = StyleSheet.create({
   projectRowTitle: { fontSize: 12, color: ON_SURFACE, flex: 1 },
   projectRowTotal: { fontSize: 12, color: ON_SURFACE_VARIANT },
   emptyProjects: { fontSize: 12, color: ON_SURFACE_VARIANT, marginTop: 8 },
+  prayerCard: { minHeight: 108 },
+  prayerHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  prayerFardCount: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: RELIGION_COLOR,
+  },
+  prayerDotsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  prayerDotColumn: { alignItems: "center", gap: 4 },
+  prayerDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  prayerSecondaryDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: SECONDARY_COLOR,
+  },
+  prayerDotLabel: { fontSize: 9, color: ON_SURFACE_VARIANT },
 });

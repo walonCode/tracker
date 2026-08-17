@@ -15,12 +15,14 @@
 
 import { getDb } from "@/db/client";
 import {
+  getEntriesForDate,
   getEntriesForDateRange,
   getEntriesForTracker,
   getTrackerById,
   listProjects,
   listTrackerFields,
   listTrackers,
+  listTrackersByKind,
 } from "@/db/repositories";
 import {
   buildContributionGrid,
@@ -33,7 +35,7 @@ import {
   type PrayerDayRecord,
   type TrackerDayRecord,
 } from "@/lib/contribution-graph";
-import { addLocalDays, toLocalDateKey } from "@/lib/dates";
+import { addLocalDays, todayLocalDateKey, toLocalDateKey } from "@/lib/dates";
 import type {
   ContributionGraphWidgetOptions,
   EntryWithValues,
@@ -291,4 +293,72 @@ export async function fetchProjectTimeWidgetData(
   const rangeLabel = rangeDays === 7 ? "this week" : `last ${rangeDays} days`;
 
   return { rangeLabel, rangeDays, total, unit, rows };
+}
+
+// ---------------------------------------------------------------------------
+// Prayer widget
+// ---------------------------------------------------------------------------
+
+const PRAYER_WIDGET_ORDER = ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const;
+const PRAYER_WIDGET_LABELS: Record<(typeof PRAYER_WIDGET_ORDER)[number], string> = {
+  fajr: "Fajr",
+  dhuhr: "Dhuhr",
+  asr: "Asr",
+  maghrib: "Maghrib",
+  isha: "Isha",
+};
+
+export interface PrayerWidgetRow {
+  label: string;
+  fardDone: boolean;
+  sunnahDone: boolean;
+}
+
+export interface PrayerWidgetData {
+  fardDone: number;
+  sunnahDone: number;
+  total: number;
+  rows: PrayerWidgetRow[];
+}
+
+/**
+ * Builds today's fard/sunnah status per prayer, for the single `kind:
+ * "prayer"` tracker — always "today", no per-instance options (unlike the
+ * other two widgets, there's nothing to configure: there's only one prayer
+ * tracker and it's never scoped to a date range). Field association is via
+ * the same `{prayer}_fard`/`{prayer}_sunnah` name-suffix convention every
+ * other prayer-aware reader in this codebase uses (see
+ * `use-daily-checklist.ts`'s `computePrayerProgress`), never the field
+ * label.
+ */
+export async function fetchPrayerWidgetData(): Promise<PrayerWidgetData> {
+  const db = await getDb();
+  const [prayerTrackers, todaysEntries] = await Promise.all([
+    listTrackersByKind(db, "prayer"),
+    getEntriesForDate(db, todayLocalDateKey()),
+  ]);
+
+  const tracker = prayerTrackers[0] ?? null;
+  const doneFieldNames = new Set<string>();
+  if (tracker) {
+    for (const entry of todaysEntries) {
+      if (entry.trackerId !== tracker.id) continue;
+      for (const value of entry.values) {
+        if (value.valueBoolean === true) doneFieldNames.add(value.field.name);
+      }
+    }
+  }
+
+  const rows: PrayerWidgetRow[] = PRAYER_WIDGET_ORDER.map((key) => ({
+    label: PRAYER_WIDGET_LABELS[key],
+    fardDone: doneFieldNames.has(`${key}_fard`),
+    sunnahDone: doneFieldNames.has(`${key}_sunnah`),
+  }));
+
+  return {
+    fardDone: rows.filter((r) => r.fardDone).length,
+    sunnahDone: rows.filter((r) => r.sunnahDone).length,
+    total: rows.length,
+    rows,
+  };
 }

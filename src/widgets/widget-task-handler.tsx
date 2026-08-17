@@ -6,9 +6,11 @@ import { ensureSeeded } from "@/db/seed-once";
 import type { WidgetContentType, WidgetInstanceOptions } from "@/types";
 
 import { ContributionGraphWidget } from "./contribution-graph-widget";
+import { PrayerWidget } from "./prayer-widget";
 import { ProjectTimeWidget } from "./project-time-widget";
 import {
   fetchContributionGraphWidgetData,
+  fetchPrayerWidgetData,
   fetchProjectTimeWidgetData,
 } from "./widget-data";
 
@@ -23,6 +25,7 @@ import {
 const WIDGET_NAME_TO_CONTENT_TYPE: Record<string, WidgetContentType> = {
   ContributionGraph: "contribution_graph",
   ProjectTime: "project_time",
+  Prayer: "prayer",
 };
 
 async function renderCurrentContent(props: WidgetTaskHandlerProps): Promise<void> {
@@ -39,6 +42,9 @@ async function renderCurrentContent(props: WidgetTaskHandlerProps): Promise<void
   if (contentType === "project_time") {
     const data = await fetchProjectTimeWidgetData(options);
     props.renderWidget(<ProjectTimeWidget data={data} />);
+  } else if (contentType === "prayer") {
+    const data = await fetchPrayerWidgetData();
+    props.renderWidget(<PrayerWidget data={data} />);
   } else {
     const data = await fetchContributionGraphWidgetData(options);
     props.renderWidget(<ContributionGraphWidget data={data} />);
@@ -46,8 +52,8 @@ async function renderCurrentContent(props: WidgetTaskHandlerProps): Promise<void
 }
 
 /**
- * Headless task handler for both home-screen widgets (`ContributionGraph`
- * and `ProjectTime`, see `app.json`). Registered once from the root
+ * Headless task handler for all three home-screen widgets (`ContributionGraph`,
+ * `ProjectTime`, `Prayer`, see `app.json`). Registered once from the root
  * `index.js` via `registerWidgetTaskHandler`. Runs with no React tree and
  * no foreground app process — Android invokes this directly (e.g. on
  * `updatePeriodMillis`, or after a force-stop on the next home-screen
