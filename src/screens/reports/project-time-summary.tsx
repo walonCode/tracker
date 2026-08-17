@@ -55,9 +55,8 @@ function formatDuration(value: number, field: TrackerField | null): string {
  * not in `tracker-trend.tsx`. The plotted field is resolved per-project by
  * checking its tracker's fields for a `duration`-typed field first (falling
  * back to any other numeric-ish field), never by assuming a field named
- * "minutes" exists — the seeded example project happens to use exactly that
- * shape (see `seedExampleProject` in `src/db/seed.ts`), but this doesn't
- * hardcode it.
+ * "minutes" exists — a project's time field is user-created and could be
+ * named anything, so this can't hardcode it.
  */
 export function ProjectTimeSummary({
   domains,

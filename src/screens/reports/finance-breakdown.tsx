@@ -29,12 +29,12 @@ const UNCATEGORIZED = "Uncategorized";
 
 /**
  * Resolves a Finance tracker's "amount" and "category" fields. Per the task
- * brief, "category" is not a schema column — it's a convention: the seeded
- * example (`seedSpendingTracker` in `src/db/seed.ts`) names its fields
- * exactly "amount" (number, unit "Nle") and "category" (text). Fields are
- * matched by `field.name`, never by guessed/hardcoded field ids. If a
- * user-created Finance tracker doesn't happen to use those exact names, this
- * falls back to "the first number-ish field" / "the first text field" so the
+ * brief, "category" is not a schema column — it's a convention: a Finance
+ * tracker is expected to name its numeric spend field "amount" and its
+ * category field "category". Fields are matched by `field.name`, never by
+ * guessed/hardcoded field ids. If a user-created Finance tracker doesn't
+ * happen to use those exact names, this falls back to "the first number-ish
+ * field" / "the first text field" so the
  * breakdown still has something reasonable to show instead of silently
  * omitting the tracker.
  */
