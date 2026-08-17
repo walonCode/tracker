@@ -31,7 +31,7 @@ const UNCATEGORIZED = "Uncategorized";
  * Resolves a Finance tracker's "amount" and "category" fields. Per the task
  * brief, "category" is not a schema column — it's a convention: the seeded
  * example (`seedSpendingTracker` in `src/db/seed.ts`) names its fields
- * exactly "amount" (number, unit "$") and "category" (text). Fields are
+ * exactly "amount" (number, unit "Nle") and "category" (text). Fields are
  * matched by `field.name`, never by guessed/hardcoded field ids. If a
  * user-created Finance tracker doesn't happen to use those exact names, this
  * falls back to "the first number-ish field" / "the first text field" so the
@@ -128,7 +128,7 @@ export function FinanceBreakdown({
 
     // Unit shown on every amount comes from the first resolved amount field
     // found — Finance trackers in this app conventionally share the same
-    // "$" unit, and this avoids re-deriving/mixing units per row.
+    // "Nle" unit, and this avoids re-deriving/mixing units per row.
     let amountUnit: string | null = null;
     for (const trackerId of financeTrackerIds) {
       const resolved = resolveAmountFields(fieldsByTrackerId.get(trackerId) ?? []);

@@ -230,7 +230,7 @@ async function seedSpendingTracker(db: SQLiteDatabase, domain: Domain): Promise<
       name: "amount",
       label: "Amount",
       type: "number",
-      unit: "$",
+      unit: "Nle",
       sortOrder: 0,
     });
     const categoryField = await createTrackerField(db, {
