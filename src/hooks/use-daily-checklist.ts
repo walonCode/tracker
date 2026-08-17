@@ -10,8 +10,8 @@ import {
   listTrackerFields,
   listTrackers,
 } from "@/db/repositories";
+import { ensureSeeded } from "@/db/seed-once";
 import { todayLocalDateKey } from "@/lib/dates";
-import { ensureSeeded } from "@/screens/today/seed-once";
 import type { Domain, EntryWithValues, Tracker, TrackerField } from "@/types";
 
 /** `{done, total}` completion for one half (fard or sunnah) of the prayer tracker. */

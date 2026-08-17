@@ -8,6 +8,7 @@ import { createTrackerField } from "./repositories/tracker-fields";
 import { createProjectWithTracker, listProjects } from "./repositories/projects";
 import { createProjectPage } from "./repositories/project-pages";
 import { createProjectBlock } from "./repositories/project-blocks";
+import { toLocalDateKey } from "@/lib/dates";
 import type { Domain, DomainKey } from "@/types";
 
 // ===========================================================================
@@ -42,19 +43,18 @@ const PRAYER_LABELS: Record<(typeof PRAYERS)[number], string> = {
 };
 
 /**
- * Seeds the 5 fixed domains, once. No-op if any domain already exists.
- * All 5 inserts run in one transaction so a crash/error partway through
- * (e.g. after 2 of 5 domains) rolls back cleanly instead of leaving a
- * partial set that the `existing.length > 0` check would then skip forever.
+ * Seeds the 5 fixed domains. Each domain is inserted independently with
+ * `INSERT OR IGNORE` keyed on `domains.key` (UNIQUE) rather than gating the
+ * whole function on "any domain exists" — that all-or-nothing check would
+ * permanently skip backfilling a domain (e.g. "religion", added after this
+ * app's initial release) on an install that was already seeded before that
+ * domain existed. Safe to call on every app boot either way.
  */
 async function seedDomains(db: SQLiteDatabase): Promise<void> {
-  const existing = await listDomains(db);
-  if (existing.length > 0) return;
-
   await db.withTransactionAsync(async () => {
     for (const domain of CORE_DOMAINS) {
       await db.runAsync(
-        "INSERT INTO domains (key, label, color, icon, sort_order, is_system) VALUES (?, ?, ?, ?, ?, 1)",
+        "INSERT OR IGNORE INTO domains (key, label, color, icon, sort_order, is_system) VALUES (?, ?, ?, ?, ?, 1)",
         [domain.key, domain.label, domain.color, domain.icon, domain.sortOrder]
       );
     }
@@ -130,8 +130,7 @@ export async function seedCore(db: SQLiteDatabase): Promise<void> {
 function daysAgoIso(daysAgo: number): { occurredAt: string; localDate: string } {
   const date = new Date();
   date.setDate(date.getDate() - daysAgo);
-  const occurredAt = date.toISOString();
-  return { occurredAt, localDate: occurredAt.slice(0, 10) };
+  return { occurredAt: date.toISOString(), localDate: toLocalDateKey(date) };
 }
 
 interface ExampleEntrySeed {
@@ -363,7 +362,7 @@ async function seedExampleProject(db: SQLiteDatabase, domain: Domain): Promise<v
 }
 
 /**
- * Seeds a handful of example trackers/entries/a project across the 4
+ * Seeds a handful of example trackers/entries/a project across the fixed
  * domains, for manual verification during development. NOT part of
  * seedCore() — keep this call out of production seeding paths once the app
  * ships to real users.

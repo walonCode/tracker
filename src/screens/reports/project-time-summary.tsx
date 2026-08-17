@@ -124,7 +124,7 @@ export function ProjectTimeSummary({
               </Text>
             </View>
             <Text style={[styles.stats, { color: colors.onSurfaceVariant }]}>
-              {formatDuration(totalInRange, field)} this {rangeLabel} ·{" "}
+              {formatDuration(totalInRange, field)} {rangeLabel} ·{" "}
               {formatDuration(totalAllTime, field)} all-time · {entryCount}{" "}
               {entryCount === 1 ? "entry" : "entries"}
             </Text>

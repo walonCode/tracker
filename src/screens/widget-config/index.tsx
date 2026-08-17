@@ -15,6 +15,7 @@ import type {
 
 import { getDb } from "@/db/client";
 import { listProjects, listTrackers, upsertWidgetInstance } from "@/db/repositories";
+import { ensureSeeded } from "@/db/seed-once";
 import { ContributionGraphWidget } from "@/widgets/contribution-graph-widget";
 import { ProjectTimeWidget } from "@/widgets/project-time-widget";
 import {
@@ -102,6 +103,7 @@ function WidgetConfigForm({ widgetInfo, renderWidget, setResult }: WidgetConfigF
 
     (async () => {
       const db = await getDb();
+      await ensureSeeded(db);
       if (contentType === "project_time") {
         const activeProjects = await listProjects(db, { status: "active" });
         if (!cancelled) setProjects(activeProjects);

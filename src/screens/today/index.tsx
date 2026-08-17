@@ -1,5 +1,6 @@
 import { Column, Host } from "@expo/ui";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useRef } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -26,6 +27,23 @@ export function TodayScreen() {
   const preview = useContributionPreview();
   const checklist = useDailyChecklist();
   const feed = useTodaysFeed();
+
+  // Each hook already fetches once on mount; this only needs to re-fetch on
+  // every *subsequent* focus — e.g. returning from the Add or Prayer Log
+  // formSheet, which logs an entry without this screen ever unmounting (a
+  // formSheet route stacks above it rather than replacing it), so without
+  // this the checklist/feed/graph would silently go stale after every log.
+  const hasFocusedOnceRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnceRef.current) {
+        hasFocusedOnceRef.current = true;
+        return;
+      }
+      void Promise.all([preview.refresh(), checklist.refresh(), feed.refresh()]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh()s are stable useCallbacks
+    }, [])
+  );
 
   const handleToggle = async (trackerId: number) => {
     await checklist.toggleTracker(trackerId);

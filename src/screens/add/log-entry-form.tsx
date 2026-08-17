@@ -42,6 +42,7 @@ export function LogEntryForm() {
   const [fields, setFields] = useState<TrackerField[]>([]);
   const [note, setNote] = useState("");
   const [values, setValues] = useState<Record<number, FieldDraftValue>>({});
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +82,7 @@ export function LogEntryForm() {
       setSelectedTracker(tracker);
       setFields(trackerFields);
       setNote("");
+      setValidationError(null);
       setValues(
         Object.fromEntries(trackerFields.map((f) => [f.id, emptyFieldDraftValue()]))
       );
@@ -90,6 +92,16 @@ export function LogEntryForm() {
 
   const handleSave = useCallback(async () => {
     if (!selectedTracker) return;
+    setValidationError(null);
+
+    const isFieldEmpty = (v: FieldDraftValue) =>
+      v.valueNumber === null && v.valueText === null && v.valueBoolean === null;
+    const hasAnyValue = fields.some((f) => !isFieldEmpty(values[f.id] ?? emptyFieldDraftValue()));
+    if (fields.length > 0 && !hasAnyValue && note.trim() === "") {
+      setValidationError("Fill in at least one field or add a note before saving.");
+      return;
+    }
+
     await saveEntry({
       trackerId: selectedTracker.id,
       note: note.trim() === "" ? null : note.trim(),
@@ -198,7 +210,9 @@ export function LogEntryForm() {
         />
       </View>
 
-      {error ? <Text style={{ color: colors.error }}>{error.message}</Text> : null}
+      {validationError || error ? (
+        <Text style={{ color: colors.error }}>{validationError ?? error?.message}</Text>
+      ) : null}
 
       <Pressable
         onPress={handleSave}

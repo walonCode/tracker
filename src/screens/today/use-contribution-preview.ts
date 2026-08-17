@@ -2,15 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import type { SQLiteDatabase } from "expo-sqlite";
 
 import { getDb } from "@/db/client";
-import { getEntriesForDateRange, listTrackers } from "@/db/repositories";
+import { getEntriesForDateRange, listTrackerFields, listTrackers } from "@/db/repositories";
+import { ensureSeeded } from "@/db/seed-once";
 import {
   computeAggregateDailyIntensity,
   type AggregateDaySource,
   type DayIntensity,
 } from "@/lib/contribution-graph";
 import { addLocalDays, toLocalDateKey } from "@/lib/dates";
-
-import { ensureSeeded } from "./seed-once";
 
 /** 2 weeks, matching the `ContributionGraph`'s `weeks={PREVIEW_WEEKS}` prop below. */
 const PREVIEW_WEEKS = 2;
@@ -52,19 +51,46 @@ async function fetchContributionPreview(db: SQLiteDatabase): Promise<DayIntensit
     getEntriesForDateRange(db, startDate, endDate),
   ]);
 
-  const dailyTrackerIds = new Set(
-    trackers.filter((t) => t.frequency === "daily").map((t) => t.id)
+  const dailyTrackers = trackers.filter((t) => t.frequency === "daily");
+  const dailyTrackerIds = new Set(dailyTrackers.map((t) => t.id));
+  const prayerTracker = dailyTrackers.find((t) => t.kind === "prayer") ?? null;
+  const prayerFields = prayerTracker ? await listTrackerFields(db, prayerTracker.id) : [];
+  const fardFieldIds = new Set(
+    prayerFields.filter((f) => f.name.endsWith("_fard")).map((f) => f.id)
   );
+  const sunnahFieldIds = new Set(
+    prayerFields.filter((f) => f.name.endsWith("_sunnah")).map((f) => f.id)
+  );
+  const fardTotal = fardFieldIds.size || 1;
 
   const loggedByDate = new Map<string, Set<number>>();
+  // Prayer tracker only: per-day fard-completed count and any-sunnah-true flag,
+  // mirroring `computePrayerProgress` in `use-daily-checklist.ts` so the
+  // preview's brightness matches the checklist's own fard-driven definition.
+  const prayerByDate = new Map<string, { fardDone: Set<number>; sunnahDone: boolean }>();
+
   for (const entry of entries) {
     if (!dailyTrackerIds.has(entry.trackerId)) continue;
+
     let loggedTrackerIds = loggedByDate.get(entry.localDate);
     if (!loggedTrackerIds) {
       loggedTrackerIds = new Set();
       loggedByDate.set(entry.localDate, loggedTrackerIds);
     }
     loggedTrackerIds.add(entry.trackerId);
+
+    if (prayerTracker && entry.trackerId === prayerTracker.id) {
+      let prayerDay = prayerByDate.get(entry.localDate);
+      if (!prayerDay) {
+        prayerDay = { fardDone: new Set(), sunnahDone: false };
+        prayerByDate.set(entry.localDate, prayerDay);
+      }
+      for (const value of entry.values) {
+        if (value.valueBoolean !== true) continue;
+        if (fardFieldIds.has(value.fieldId)) prayerDay.fardDone.add(value.fieldId);
+        if (sunnahFieldIds.has(value.fieldId)) prayerDay.sunnahDone = true;
+      }
+    }
   }
 
   const sources: AggregateDaySource[] = [];
@@ -73,6 +99,15 @@ async function fetchContributionPreview(db: SQLiteDatabase): Promise<DayIntensit
     const dateKey = toLocalDateKey(cursor);
     const loggedTrackerIds = loggedByDate.get(dateKey);
     for (const trackerId of dailyTrackerIds) {
+      if (prayerTracker && trackerId === prayerTracker.id) {
+        const prayerDay = prayerByDate.get(dateKey);
+        sources.push({
+          date: dateKey,
+          value: prayerDay ? prayerDay.fardDone.size / fardTotal : 0,
+          secondary: prayerDay?.sunnahDone ?? false,
+        });
+        continue;
+      }
       sources.push({
         date: dateKey,
         value: loggedTrackerIds?.has(trackerId) ? 1 : 0,

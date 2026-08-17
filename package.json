@@ -1,6 +1,6 @@
 {
   "name": "tracker",
-  "main": "index.js",
+  "main": "index.ts",
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~57.0.10",

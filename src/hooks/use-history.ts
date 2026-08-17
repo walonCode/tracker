@@ -37,7 +37,7 @@ export interface UseHistoryResult {
   /** True during a pull-to-refresh re-fetch (data already present). */
   refreshing: boolean;
   error: Error | null;
-  /** The 4 fixed domains, in `sort_order` — for driving the filter row. */
+  /** The 5 fixed domains, in `sort_order` — for driving the filter row. */
   domains: Domain[];
   domainFilter: HistoryDomainFilter;
   setDomainFilter: (filter: HistoryDomainFilter) => void;

@@ -3,8 +3,8 @@ import type { SQLiteDatabase } from "expo-sqlite";
 
 import { getDb } from "@/db/client";
 import { getEntriesForDate, listDomains, listTrackers } from "@/db/repositories";
+import { ensureSeeded } from "@/db/seed-once";
 import { todayLocalDateKey } from "@/lib/dates";
-import { ensureSeeded } from "@/screens/today/seed-once";
 import type { Domain, EntryWithValues, Tracker } from "@/types";
 
 /** One row of the "everything logged today" activity feed. */

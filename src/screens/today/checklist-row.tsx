@@ -5,6 +5,8 @@ import type { PrayerProgress } from "@/hooks/use-daily-checklist";
 import { DOMAIN_PALETTE } from "@/theme/domain-palette";
 import type { Domain, Tracker } from "@/types";
 
+const FALLBACK_DOMAIN_COLOR = DOMAIN_PALETTE.religion.color;
+
 export interface ChecklistRowProps {
   tracker: Tracker;
   domain: Domain | undefined;
@@ -43,13 +45,14 @@ export function ChecklistRow({ tracker, domain, checked, progress, onToggle }: C
     const progressLabel = progress
       ? `${progress.fard.done}/${progress.fard.total} fard, ${progress.sunnah.done}/${progress.sunnah.total} sunnah`
       : undefined;
+    const progressColor = domain ? DOMAIN_PALETTE[domain.key].color : FALLBACK_DOMAIN_COLOR;
     return (
       <ListItem
         onPress={() => router.push("/prayer-log")}
         supportingText={supportingText}
         trailing={
           progressLabel ? (
-            <Text textStyle={{ color: DOMAIN_PALETTE.daily.color }}>{progressLabel}</Text>
+            <Text textStyle={{ color: progressColor }}>{progressLabel}</Text>
           ) : undefined
         }
       >

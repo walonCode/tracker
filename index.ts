@@ -8,7 +8,7 @@
 // 2026-08-16 against v0.22.0), the fix is exactly this: keep
 // `expo-router/entry`'s side effect (it self-registers the root component,
 // same as `registerRootComponent` would) and register the widget handlers
-// next to it in a custom `index.js` that `package.json#main` now points to
+// next to it in a custom entry file that `package.json#main` now points to
 // instead.
 import "expo-router/entry";
 

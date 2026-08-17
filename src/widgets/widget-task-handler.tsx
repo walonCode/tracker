@@ -2,6 +2,7 @@ import type { WidgetTaskHandlerProps } from "react-native-android-widget";
 
 import { getDb } from "@/db/client";
 import { deleteWidgetInstance, getWidgetInstance } from "@/db/repositories";
+import { ensureSeeded } from "@/db/seed-once";
 import type { WidgetContentType, WidgetInstanceOptions } from "@/types";
 
 import { ContributionGraphWidget } from "./contribution-graph-widget";
@@ -27,6 +28,7 @@ const WIDGET_NAME_TO_CONTENT_TYPE: Record<string, WidgetContentType> = {
 async function renderCurrentContent(props: WidgetTaskHandlerProps): Promise<void> {
   const { widgetInfo } = props;
   const db = await getDb();
+  await ensureSeeded(db);
   const stored = await getWidgetInstance(db, widgetInfo.widgetId);
   const contentType: WidgetContentType =
     stored?.contentType ??

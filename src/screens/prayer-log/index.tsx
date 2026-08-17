@@ -12,8 +12,8 @@ import {
   replaceEntryValues,
   type CreateEntryValueInput,
 } from "@/db/repositories";
+import { ensureSeeded } from "@/db/seed-once";
 import { todayLocalDateKey } from "@/lib/dates";
-import { ensureSeeded } from "@/screens/today/seed-once";
 import { useAppMaterialColors } from "@/theme/material-colors";
 import type { EntryWithValues, Tracker, TrackerField } from "@/types";
 
