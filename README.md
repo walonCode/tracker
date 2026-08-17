@@ -1,56 +1,106 @@
-# Welcome to your Expo app 👋
+# Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A local-first personal life-tracker for Android, built with Expo. One
+flexible system — **trackers**, **entries**, and typed **entry values** —
+replaces separate apps for habits, finances, projects, and prayer. Everything
+you log stays on your device; there is no backend, no account, and no sync.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Domains & trackers** — five fixed domains (Daily, Religion, Finance,
+  Projects, Others) group user-defined trackers by subject matter, while
+  each tracker's frequency (daily/occasional) is independent of its domain.
+- **Today** — a contribution-graph preview, a fixed checklist of daily
+  trackers, and today's activity feed, all on one screen.
+- **History** — every entry, grouped by day, filterable by domain, with
+  deep links from the graph.
+- **Add** — log an entry against an existing tracker, or define a brand new
+  tracker (name, domain, frequency, and typed fields) on the fly.
+- **Prayer tracker** — a dedicated fard/sunnah log for the five daily
+  prayers, with its own contribution-graph brightness rule (fard drives
+  fill intensity; sunnah is an independent secondary indicator).
+- **Reports** — per-domain totals, tracker trend lines, streaks, a
+  Finance category breakdown, and a Projects time-logged summary.
+- **Android home-screen widgets** — a contribution-graph widget and a
+  project-time widget, each independently configurable, reading straight
+  from the same local SQLite database.
 
-   ```bash
-   npm install
-   ```
+## Tech stack
 
-2. Start the app
+- [Expo](https://expo.dev) (SDK 57) with [Expo Router](https://docs.expo.dev/router/introduction/) for file-based navigation
+- [`expo-sqlite`](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/) for local storage — schema + migrations in `src/db/`
+- [`@expo/ui`](https://docs.expo.dev/versions/v57.0.0/sdk/ui/) (Jetpack Compose) for native Material You UI on Android
+- [`@shopify/react-native-skia`](https://shopify.github.io/react-native-skia/) for the contribution graph and trend charts
+- [`react-native-android-widget`](https://saleksovski.github.io/react-native-android-widget/) for home-screen widgets, via an Expo config plugin
+- TypeScript in strict mode, [Bun](https://bun.sh) as the package manager
 
-   ```bash
-   npx expo start
-   ```
+No backend, no analytics, no third-party network calls — see
+[`Security.md`](./Security.md).
 
-In the output, you'll find options to open the app in a
+## Getting started
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+This app depends on native modules (`expo-sqlite`, `@expo/ui`,
+`react-native-android-widget`, Skia) that don't run in Expo Go, so it needs a
+local development build.
 
 ```bash
-npm run reset-project
+bun install
+bunx expo prebuild -p android
+bun run android   # starts Metro and launches the dev client
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Other useful commands:
 
-### Other setup steps
+```bash
+bun run start        # start the Metro dev server
+bun run ios          # start targeting iOS (deferred — see Architecture)
+bun run web          # start targeting web
+bun run lint         # expo lint (ESLint flat config)
+bunx tsc --noEmit     # type-check (strict mode)
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+There is no test suite in this repo yet; verification is static
+(`tsc`/`lint`) plus manual on-device checks.
 
-## Learn more
+## Architecture
 
-To learn more about developing your project with Expo, look at the following resources:
+Routing is file-based, rooted at `src/app` (see the `main` entry point and
+`expo-router/entry`). Path aliases: `@/*` → `src/*`, `@/assets/*` →
+`assets/*`.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```
+src/
+  app/            routes only — thin wrappers around src/screens
+  screens/        screen bodies + colocated private components
+  components/     cross-screen reusable UI (contribution graph, trend chart)
+  db/             SQLite client, migrations, repositories, seed data
+  types/          shared domain types
+  lib/            pure logic (dates, contribution-graph math, streaks) —
+                  zero React/RN/Skia imports, reused by the widgets
+  hooks/          data hooks for screens
+  theme/          Material You wrapper + fixed domain color palette
+  widgets/        Android home-screen widget renderers + task handler
+```
 
-## Join the community
+Storage is local SQLite (`domains` → `trackers` → `tracker_fields`, plus
+`entries`/`entry_values`; `routines`/`goals`/`projects` round out the
+schema). The prayer tracker is a UI special case built on the same
+standard schema, not a fork of it — see `src/db/seed.ts` and
+`src/lib/contribution-graph.ts`.
 
-Join our community of developers creating universal apps.
+iOS support is deferred; the Android-only pieces (`@expo/ui/jetpack-compose`,
+the widget plugin) are isolated behind platform-file splits
+(`.android.tsx`) so a SwiftUI pass can be added later without a rewrite.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Contributing
+
+See [`Contributing.md`](./Contributing.md).
+
+## Security
+
+See [`Security.md`](./Security.md) for the threat model and how to report a
+vulnerability.
+
+## License
+
+[MIT](./LICENSE)
