@@ -112,7 +112,11 @@ export function EntryRow({ item }: EntryRowProps) {
     <Pressable
       onPress={handlePress}
       disabled={!isEditable}
-      style={[styles.row, { borderBottomColor: colors.outlineVariant }]}
+      style={({ pressed }) => [
+        styles.row,
+        { borderBottomColor: colors.outlineVariant },
+        pressed && isEditable ? { opacity: 0.6 } : null,
+      ]}
     >
       <View style={styles.header}>
         <View style={[styles.domainDot, { backgroundColor: domainColor }]} />

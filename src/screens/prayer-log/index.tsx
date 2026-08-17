@@ -269,9 +269,9 @@ export function PrayerLogScreen() {
       <Pressable
         onPress={handleSave}
         disabled={isSaving}
-        style={[
+        style={({ pressed }) => [
           styles.saveButton,
-          { backgroundColor: RELIGION_COLOR, opacity: isSaving ? 0.6 : 1 },
+          { backgroundColor: RELIGION_COLOR, opacity: isSaving ? 0.6 : pressed ? 0.8 : 1 },
         ]}
       >
         <Text style={styles.saveButtonLabel}>{isSaving ? "Saving…" : "Save"}</Text>

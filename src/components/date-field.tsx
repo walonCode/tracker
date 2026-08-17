@@ -42,7 +42,11 @@ export function DateField({ value, onChange, maximumDate = new Date() }: DateFie
     <>
       <Pressable
         onPress={() => setPickerOpen(true)}
-        style={[styles.field, { borderColor: colors.outline }]}
+        style={({ pressed }) => [
+          styles.field,
+          { borderColor: colors.outline },
+          pressed ? { opacity: 0.6 } : null,
+        ]}
         accessibilityRole="button"
       >
         <Text style={[styles.label, { color: colors.onSurface }]}>{formatDateLabel(value)}</Text>

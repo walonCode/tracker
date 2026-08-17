@@ -233,7 +233,11 @@ export function LogEntryForm({ initialTrackerId, entryId }: LogEntryFormProps) {
         {prayerTracker ? (
           <Pressable
             onPress={() => selectTracker(prayerTracker)}
-            style={[styles.trackerRow, { borderColor: colors.outlineVariant }]}
+            style={({ pressed }) => [
+              styles.trackerRow,
+              { borderColor: colors.outlineVariant },
+              pressed ? { opacity: 0.6 } : null,
+            ]}
           >
             <Text style={[styles.trackerName, { color: colors.onSurface }]}>Prayer</Text>
             <Text style={[styles.trackerMeta, { color: colors.onSurfaceVariant }]}>
@@ -255,7 +259,11 @@ export function LogEntryForm({ initialTrackerId, entryId }: LogEntryFormProps) {
             <Pressable
               key={tracker.id}
               onPress={() => selectTracker(tracker)}
-              style={[styles.trackerRow, { borderColor: colors.outlineVariant }]}
+              style={({ pressed }) => [
+                styles.trackerRow,
+                { borderColor: colors.outlineVariant },
+                pressed ? { opacity: 0.6 } : null,
+              ]}
             >
               <View style={styles.trackerRowHeader}>
                 {swatch ? <View style={[styles.dot, { backgroundColor: swatch }]} /> : null}
@@ -278,7 +286,10 @@ export function LogEntryForm({ initialTrackerId, entryId }: LogEntryFormProps) {
   return (
     <ScrollView style={styles.list} contentContainerStyle={styles.listContent} keyboardShouldPersistTaps="handled">
       {isEditing ? null : (
-        <Pressable onPress={() => setSelectedTracker(null)}>
+        <Pressable
+          onPress={() => setSelectedTracker(null)}
+          style={({ pressed }) => (pressed ? { opacity: 0.6 } : null)}
+        >
           <Text style={{ color: colors.primary }}>{"← Choose a different tracker"}</Text>
         </Pressable>
       )}
@@ -330,9 +341,9 @@ export function LogEntryForm({ initialTrackerId, entryId }: LogEntryFormProps) {
       <Pressable
         onPress={handleSave}
         disabled={isSaving}
-        style={[
+        style={({ pressed }) => [
           styles.saveButton,
-          { backgroundColor: colors.primary, opacity: isSaving ? 0.6 : 1 },
+          { backgroundColor: colors.primary, opacity: isSaving ? 0.6 : pressed ? 0.8 : 1 },
         ]}
       >
         <Text style={[styles.saveButtonLabel, { color: colors.onPrimary }]}>
@@ -341,7 +352,11 @@ export function LogEntryForm({ initialTrackerId, entryId }: LogEntryFormProps) {
       </Pressable>
 
       {isEditing ? (
-        <Pressable onPress={handleDelete} disabled={isSaving} style={styles.deleteButton}>
+        <Pressable
+          onPress={handleDelete}
+          disabled={isSaving}
+          style={({ pressed }) => [styles.deleteButton, pressed ? { opacity: 0.6 } : null]}
+        >
           <Text style={[styles.deleteButtonLabel, { color: colors.error }]}>Delete Entry</Text>
         </Pressable>
       ) : null}

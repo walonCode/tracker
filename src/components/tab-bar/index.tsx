@@ -40,7 +40,7 @@ export default function TabBar({
       <Pressable
         key={item.key}
         onPress={item.onPress}
-        style={styles.item}
+        style={({ pressed }) => [styles.item, pressed ? { opacity: 0.6 } : null]}
         accessibilityRole="tab"
         accessibilityState={{ selected: item.isFocused }}
       >
@@ -65,7 +65,11 @@ export default function TabBar({
       {renderItem(today)}
       <Pressable
         onPress={() => router.push("/add")}
-        style={[styles.fab, { backgroundColor: colors.primaryContainer }]}
+        style={({ pressed }) => [
+          styles.fab,
+          { backgroundColor: colors.primaryContainer },
+          pressed ? { transform: [{ scale: 0.92 }] } : null,
+        ]}
         accessibilityRole="button"
         accessibilityLabel="Create"
       >
