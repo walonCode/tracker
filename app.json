@@ -27,6 +27,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/with-work-manager-resolution.js",
       [
         "expo-splash-screen",
         {
