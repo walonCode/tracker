@@ -2,6 +2,7 @@ import type { Db, TaskUnit } from "@/db/types";
 import * as settings from "@/db/repos/settings";
 import { nowSeconds } from "@/domain/clock";
 import { addDays, localTimeToSeconds, today, weekdayOf } from "@/domain/dates";
+import { setStep } from "@/features/onboarding/steps";
 
 // Development data: one goal, four tasks, and 84 days of plan items with
 // sessions, ending with today's plan still open. Runs once per install.
@@ -131,6 +132,8 @@ export async function seedDevData(db: Db): Promise<void> {
       }
     }
 
+    // The seed already has an active goal, so first run is skipped.
+    await setStep(db, "done");
     await settings.set(db, SEEDED_KEY, String(now));
   });
 }

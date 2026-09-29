@@ -2,6 +2,7 @@ import { resetClockSource, setClockSource } from "../clock";
 import {
   addDays,
   daysBetween,
+  formatDate,
   formatDuration,
   localDate,
   localTimeToSeconds,
@@ -104,5 +105,13 @@ describe("formatDuration", () => {
     [5700, "1 h 35 min"],
   ])("formats %i seconds as %s", (seconds, expected) => {
     expect(formatDuration(seconds)).toBe(expected);
+  });
+});
+
+describe("formatDate", () => {
+  it("omits the year only when it matches the reference", () => {
+    expect(formatDate("2026-09-28", "2026-01-01")).toBe("Mon 28 Sep");
+    expect(formatDate("2027-01-04", "2026-12-30")).toBe("Mon 4 Jan 2027");
+    expect(formatDate("2026-10-04")).toBe("Sun 4 Oct 2026");
   });
 });

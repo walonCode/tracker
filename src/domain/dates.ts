@@ -65,6 +65,16 @@ export function localTimeToSeconds(date: LocalDate, hhmm = "00:00"): number {
   return Math.floor(new Date(y, m - 1, d, hh, mm).getTime() / 1000);
 }
 
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** `Mon 28 Sep`, with the year appended when it differs from `reference`'s. */
+export function formatDate(date: LocalDate, reference?: LocalDate): string {
+  const { y, m, d } = parse(date);
+  const base = `${WEEKDAYS[weekdayOf(date)]} ${d} ${MONTHS[m - 1]}`;
+  return reference && parse(reference).y === y ? base : `${base} ${y}`;
+}
+
 /**
  * Under one hour: a clock reading, `mm:ss` (`38:12`).
  * One hour or more: `1 h 35 min`, or `2 h` on a whole hour.
