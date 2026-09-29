@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "tracker",
+    "name": "Focus",
     "slug": "tracker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "tracker",
+    "scheme": "focusapp",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.walonfoundation.tracker",
@@ -27,7 +27,6 @@
     },
     "plugins": [
       "expo-router",
-      "./plugins/with-work-manager-resolution.js",
       [
         "expo-splash-screen",
         {
@@ -38,81 +37,16 @@
       ],
       "expo-sqlite",
       [
-        "react-native-android-widget",
-        {
-          "widgets": [
-            {
-              "name": "ContributionGraph",
-              "label": "Contribution Graph",
-              "description": "Recent-days activity grid for one tracker or all trackers combined.",
-              "minWidth": "250dp",
-              "minHeight": "150dp",
-              "targetCellWidth": 4,
-              "targetCellHeight": 2,
-              "resizeMode": "horizontal|vertical",
-              "widgetFeatures": "reconfigurable",
-              "previewImage": "./assets/images/widget-preview-contribution-graph.png"
-            },
-            {
-              "name": "ProjectTime",
-              "label": "Project Time",
-              "description": "Total time logged on your projects, this range.",
-              "minWidth": "180dp",
-              "minHeight": "110dp",
-              "targetCellWidth": 3,
-              "targetCellHeight": 2,
-              "resizeMode": "horizontal|vertical",
-              "widgetFeatures": "reconfigurable",
-              "previewImage": "./assets/images/widget-preview-project-time.png"
-            },
-            {
-              "name": "Prayer",
-              "label": "Prayer",
-              "description": "Today's fard/sunnah status for each of the five daily prayers.",
-              "minWidth": "220dp",
-              "minHeight": "110dp",
-              "targetCellWidth": 3,
-              "targetCellHeight": 2,
-              "resizeMode": "horizontal|vertical",
-              "widgetFeatures": "reconfigurable",
-              "previewImage": "./assets/images/widget-preview-prayer.png"
-            }
-          ]
-        }
-      ],
-      [
         "expo-build-properties",
         {
           "android": {
-            "buildArchs": ["armeabi-v7a", "arm64-v8a", "x86", "x86_64"]
+            "buildArchs": [
+              "armeabi-v7a",
+              "arm64-v8a",
+              "x86",
+              "x86_64"
+            ]
           }
-        }
-      ],
-      [
-        "expo-widgets",
-        {
-          "bundleIdentifier": "com.walonfoundation.tracker.widgets",
-          "groupIdentifier": "group.com.walonfoundation.tracker",
-          "widgets": [
-            {
-              "name": "ContributionGraph",
-              "displayName": "Contribution Graph",
-              "description": "Recent-days activity grid for one tracker or all trackers combined.",
-              "supportedFamilies": ["systemSmall", "systemMedium"]
-            },
-            {
-              "name": "ProjectTime",
-              "displayName": "Project Time",
-              "description": "Total time logged on your projects, this range.",
-              "supportedFamilies": ["systemSmall", "systemMedium"]
-            },
-            {
-              "name": "Prayer",
-              "displayName": "Prayer",
-              "description": "Today's fard/sunnah status for each of the five daily prayers.",
-              "supportedFamilies": ["systemSmall", "systemMedium"]
-            }
-          ]
         }
       ]
     ],

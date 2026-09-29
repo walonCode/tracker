@@ -1,0 +1,6 @@
+android/
+ios/
+bun.lock
+.agents/
+.claude/
+docs/
