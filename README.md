@@ -7,7 +7,7 @@ The app is built in seven plans, `docs/plan1.md` to `docs/plan7.md`. Each plan l
 | Plan | Scope | Status |
 | --- | --- | --- |
 | 1 | Foundation: theme, navigation shell, database, migrations, date utilities | Done |
-| 2 | Goal and first run | Pending |
+| 2 | Goal and first run | Done |
 | 3 | Tasks and planning | Pending |
 | 4 | Session engine and Today | Pending |
 | 5 | Android focus mode (native module) | Pending |

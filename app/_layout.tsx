@@ -3,7 +3,20 @@ import { StatusBar } from "expo-status-bar";
 import { PaperProvider } from "react-native-paper";
 
 import { DatabaseProvider } from "@/db/DatabaseProvider";
-import { useAppTheme } from "@/theme";
+import { useOnboardingRedirect } from "@/features/onboarding/useOnboardingRedirect";
+import { useAppTheme, type AppTheme } from "@/theme";
+
+function Navigator({ theme }: { theme: AppTheme }) {
+  useOnboardingRedirect();
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: theme.colors.background },
+      }}
+    />
+  );
+}
 
 export default function RootLayout() {
   const theme = useAppTheme();
@@ -12,12 +25,7 @@ export default function RootLayout() {
     <PaperProvider theme={theme}>
       <StatusBar style={theme.dark ? "light" : "dark"} />
       <DatabaseProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: theme.colors.background },
-          }}
-        />
+        <Navigator theme={theme} />
       </DatabaseProvider>
     </PaperProvider>
   );
