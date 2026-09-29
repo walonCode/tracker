@@ -1,96 +1,64 @@
-# Tracker
+# Focus
 
-A local-first personal life-tracker for Android, built with Expo. One
-flexible system — **trackers**, **entries**, and typed **entry values** —
-replaces separate apps for habits, finances, projects, and prayer. Everything
-you log stays on your device; there is no backend, no account, and no sync.
+A local-first Android focus app built with Expo. The user sets one goal, plans tomorrow's tasks with a fixed amount and time limit, and runs each task as a timed session. During a session the app silences notifications (calls still ring) and blocks every app that is not on an allowed list. Everything stays on the device: no backend, no account, no analytics, no network calls.
 
-## Features
+The app is built in seven plans, `docs/plan1.md` to `docs/plan7.md`. Each plan lists its dependencies, rules, tests, and acceptance checks.
 
-- **Domains & trackers** — five fixed domains (Daily, Religion, Finance,
-  Projects, Others) group user-defined trackers by subject matter, while
-  each tracker's frequency (daily/occasional) is independent of its domain.
-- **Today** — a contribution-graph preview, a fixed checklist of daily
-  trackers, and today's activity feed, all on one screen.
-- **History** — every entry, grouped by day, filterable by domain, with
-  deep links from the graph.
-- **Add** — log an entry against an existing tracker, or define a brand new
-  tracker (name, domain, frequency, and typed fields) on the fly.
-- **Prayer tracker** — a dedicated fard/sunnah log for the five daily
-  prayers, with its own contribution-graph brightness rule (fard drives
-  fill intensity; sunnah is an independent secondary indicator).
-- **Reports** — per-domain totals, tracker trend lines, streaks, a
-  Finance category breakdown, and a Projects time-logged summary.
-- **Android home-screen widgets** — a contribution-graph widget and a
-  project-time widget, each independently configurable, reading straight
-  from the same local SQLite database.
+| Plan | Scope | Status |
+| --- | --- | --- |
+| 1 | Foundation: theme, navigation shell, database, migrations, date utilities | Done |
+| 2 | Goal and first run | Pending |
+| 3 | Tasks and planning | Pending |
+| 4 | Session engine and Today | Pending |
+| 5 | Android focus mode (native module) | Pending |
+| 6 | Log and statistics | Pending |
+| 7 | Hardening and release | Pending |
 
 ## Tech stack
 
-- [Expo](https://expo.dev) (SDK 57) with [Expo Router](https://docs.expo.dev/router/introduction/) for file-based navigation
-- [`expo-sqlite`](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/) for local storage — schema + migrations in `src/db/`
-- [`@expo/ui`](https://docs.expo.dev/versions/v57.0.0/sdk/ui/) (Jetpack Compose) for native Material You UI on Android
-- [`@shopify/react-native-skia`](https://shopify.github.io/react-native-skia/) for the contribution graph and trend charts
-- [`react-native-android-widget`](https://saleksovski.github.io/react-native-android-widget/) for home-screen widgets, via an Expo config plugin
+- [Expo](https://expo.dev) SDK 57 with [Expo Router](https://docs.expo.dev/router/introduction/), development build only (plan 5 adds native code, so Expo Go is not supported)
+- [React Native Paper](https://callstack.github.io/react-native-paper/) (Material 3), light and dark themes following the system setting
+- [`expo-sqlite`](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/) for storage, `expo-keep-awake` and `expo-audio` for sessions
+- Jest via `jest-expo`; database tests run against Node's built-in SQLite
 - TypeScript in strict mode, [Bun](https://bun.sh) as the package manager
 
-No backend, no analytics, no third-party network calls — see
-[`Security.md`](./Security.md).
-
 ## Getting started
-
-This app depends on native modules (`expo-sqlite`, `@expo/ui`,
-`react-native-android-widget`, Skia) that don't run in Expo Go, so it needs a
-local development build.
 
 ```bash
 bun install
 bunx expo prebuild -p android
-bun run android   # starts Metro and launches the dev client
+bun run android      # builds and launches the dev client
 ```
 
-Other useful commands:
+Checks (all three must pass before a plan is merged):
 
 ```bash
-bun run start        # start the Metro dev server
-bun run ios          # start targeting iOS (deferred — see Architecture)
-bun run web          # start targeting web
-bun run lint         # expo lint (ESLint flat config)
-bunx tsc --noEmit     # type-check (strict mode)
+bun run typecheck
+bun run lint
+bun run test
 ```
 
-There is no test suite in this repo yet; verification is static
-(`tsc`/`lint`) plus manual on-device checks.
+In development builds the database is seeded once with one goal, four tasks, and 84 days of plan items and sessions (`src/dev/seed.ts`). Set `EXPO_PUBLIC_DEV_SEED=0` to start from an empty database.
 
 ## Architecture
 
-Routing is file-based, rooted at `src/app` (see the `main` entry point and
-`expo-router/entry`). Path aliases: `@/*` → `src/*`, `@/assets/*` →
-`assets/*`.
-
 ```
-src/
-  app/            routes only — thin wrappers around src/screens
-  screens/        screen bodies + colocated private components
-  components/     cross-screen reusable UI (contribution graph, trend chart)
-  db/             SQLite client, migrations, repositories, seed data
-  types/          shared domain types
-  lib/            pure logic (dates, contribution-graph math, streaks) —
-                  zero React/RN/Skia imports, reused by the widgets
-  hooks/          data hooks for screens
-  theme/          Material You wrapper + fixed domain color palette
-  widgets/        Android home-screen widget renderers + task handler
+app/                    expo-router routes (screens only, no logic)
+src/db/                 client, migrations, repos
+src/domain/             pure functions: clock, dates, labels, session math
+src/features/           feature components and hooks, one folder per plan
+src/components/         shared UI (ScreenBar)
+src/theme/              Material 3 theme
+src/dev/                seed data, dev only
+modules/focus-mode/     Kotlin module (plan 5)
+test/                   test helpers
 ```
 
-Storage is local SQLite (`domains` → `trackers` → `tracker_fields`, plus
-`entries`/`entry_values`; `routines`/`goals`/`projects` round out the
-schema). The prayer tracker is a UI special case built on the same
-standard schema, not a fork of it — see `src/db/seed.ts` and
-`src/lib/contribution-graph.ts`.
-
-iOS support is deferred; the Android-only pieces (`@expo/ui/jetpack-compose`,
-the widget plugin) are isolated behind platform-file splits
-(`.android.tsx`) so a SwiftUI pass can be added later without a rewrite.
+- Time: every timestamp is integer Unix seconds; every date is a local `YYYY-MM-DD` string; the day boundary is local midnight. Code reads the time only through `src/domain/clock.ts`, so tests can fix it.
+- Migrations are an ordered array of SQL strings in `src/db/migrations.ts`, applied above `PRAGMA user_version`, one transaction each.
+- Repos are plain async functions that take a `Db` handle (`src/db/types.ts`), a subset of the expo-sqlite API. Tests pass a Node SQLite implementation of the same interface (`test/nodeDb.ts`).
+- Navigation is a single stack with hidden headers. Every screen renders `ScreenBar`. There is no tab bar and no drawer.
+- Android only in v1. All code is platform neutral except `modules/focus-mode`.
 
 ## Contributing
 
@@ -98,8 +66,7 @@ See [`Contributing.md`](./Contributing.md).
 
 ## Security
 
-See [`Security.md`](./Security.md) for the threat model and how to report a
-vulnerability.
+See [`Security.md`](./Security.md).
 
 ## License
 
