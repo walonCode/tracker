@@ -2,12 +2,12 @@ import { router } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { Button } from "react-native-paper";
 
-import { ScreenBar } from "@/components/ScreenBar";
+import { ScreenBar, type OverflowItem } from "@/components/ScreenBar";
 import { GoalCard } from "@/features/goal/GoalCard";
 import { useActiveGoal } from "@/features/goal/useActiveGoal";
 
 // Plan 5 adds Session settings and plan 7 adds Export data.
-const OVERFLOW_ITEMS: never[] = [];
+const OVERFLOW_ITEMS: OverflowItem[] = [{ title: "Saved tasks", onPress: () => router.push("/tasks") }];
 
 export function TodayScreen() {
   const goal = useActiveGoal();
@@ -28,6 +28,9 @@ export function TodayScreen() {
         <View style={styles.body}>
           {goal ? <GoalCard goal={goal} /> : null}
           {/* Task list: plan 4. */}
+          <Button mode="text" onPress={() => router.push("/plan")}>
+            Plan tomorrow
+          </Button>
         </View>
       )}
     </View>

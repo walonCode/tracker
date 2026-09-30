@@ -75,6 +75,15 @@ export function formatDate(date: LocalDate, reference?: LocalDate): string {
   return reference && parse(reference).y === y ? base : `${base} ${y}`;
 }
 
+/** A planned amount of time: `45 min`, `1 h 35 min`, `2 h`. */
+export function formatMinutes(minutes: number): string {
+  const total = Math.max(0, Math.round(minutes));
+  if (total < 60) return `${total} min`;
+  const hours = Math.floor(total / 60);
+  const rest = total % 60;
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+}
+
 /**
  * Under one hour: a clock reading, `mm:ss` (`38:12`).
  * One hour or more: `1 h 35 min`, or `2 h` on a whole hour.
