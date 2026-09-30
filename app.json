@@ -38,6 +38,7 @@
       "expo-sqlite",
       "./plugins/withFocusMode",
       "./plugins/withBackupRules",
+      "./plugins/withReleaseSigning",
       [
         "expo-build-properties",
         {
@@ -47,7 +48,10 @@
               "arm64-v8a",
               "x86",
               "x86_64"
-            ]
+            ],
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "useLegacyPackaging": true
           }
         }
       ]
