@@ -5,7 +5,7 @@ import { AppState } from "react-native";
 import { useDb } from "@/db/DatabaseProvider";
 import { reconcileSessions } from "./engine";
 
-const SESSION_ROUTES = ["/session", "/done", "/blocked"];
+const SESSION_ROUTES = ["/session", "/done", "/blocked", "/start-next"];
 
 /**
  * Runs `reconcileOpenSession` at app start and on every foreground return:

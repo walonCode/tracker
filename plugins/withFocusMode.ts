@@ -16,6 +16,7 @@ const PERMISSIONS = [
 ];
 
 const SERVICE_NAME = "expo.modules.focusmode.FocusService";
+const WIDGET_NAME = "expo.modules.focusmode.NextTaskWidget";
 const SPECIAL_USE_PURPOSE = "blocks distracting apps during a user-started focus session";
 
 type Manifest = AndroidConfig.Manifest.AndroidManifest["manifest"];
@@ -70,12 +71,27 @@ function addService(manifest: Manifest) {
   });
 }
 
+/** The Next task home-screen widget (plan 7). */
+function addWidgetReceiver(manifest: Manifest) {
+  const application = AndroidConfig.Manifest.getMainApplicationOrThrow({ manifest });
+  const receivers = ((application as unknown as { receiver?: Element[] }).receiver ??= []);
+  if (receivers.some((r) => r.$?.["android:name"] === WIDGET_NAME)) return;
+  receivers.push({
+    $: { "android:name": WIDGET_NAME, "android:exported": "false", "android:label": "Focus: next task" },
+    "intent-filter": [{ action: [{ $: { "android:name": "android.appwidget.action.APPWIDGET_UPDATE" } }] }],
+    "meta-data": [
+      { $: { "android:name": "android.appwidget.provider", "android:resource": "@xml/focus_next_widget_info" } },
+    ],
+  });
+}
+
 const withFocusMode: ConfigPlugin = (config) =>
   withAndroidManifest(config, (mod) => {
     const manifest = mod.modResults.manifest;
     addPermissions(manifest);
     addLauncherQuery(manifest);
     addService(manifest);
+    addWidgetReceiver(manifest);
     return mod;
   });
 

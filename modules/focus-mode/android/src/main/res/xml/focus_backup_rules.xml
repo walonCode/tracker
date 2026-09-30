@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto Backup, Android 11 and below: the SQLite database only (expo-sqlite keeps it in files/SQLite/). -->
+<full-backup-content>
+    <include domain="file" path="SQLite/" />
+</full-backup-content>

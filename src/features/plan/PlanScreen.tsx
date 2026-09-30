@@ -20,6 +20,7 @@ import {
   type DraftItem,
   type TaskWithRepeats,
 } from "@/domain/planBuilder";
+import { refreshOutputs } from "@/features/refresh";
 import { takeJustCreated } from "@/features/tasks/justCreated";
 
 import { AddTaskSheet } from "./AddTaskSheet";
@@ -86,6 +87,7 @@ export function PlanScreen() {
         { date, items: draft.items, dropIds: draft.dropIds },
         { firstPlanToday: isToday },
       );
+      refreshOutputs(db);
       if (router.canGoBack()) router.back();
       else router.replace("/");
     } catch (e) {

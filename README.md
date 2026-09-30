@@ -12,13 +12,13 @@ The app is built in seven plans, `docs/plan1.md` to `docs/plan7.md`. Each plan l
 | 4 | Session engine and Today | Done |
 | 5 | Android focus mode (native module) | Built; device test matrix pending |
 | 6 | Log and statistics | Done |
-| 7 | Hardening and release | Pending |
+| 7 | Hardening and release | Code done; quality pass and Play release pending |
 
 ## Tech stack
 
 - [Expo](https://expo.dev) SDK 57 with [Expo Router](https://docs.expo.dev/router/introduction/), development build only (plan 5 adds native code, so Expo Go is not supported)
 - [React Native Paper](https://callstack.github.io/react-native-paper/) (Material 3), light and dark themes following the system setting
-- [`expo-sqlite`](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/) for storage, `expo-keep-awake` and `expo-audio` for sessions
+- [`expo-sqlite`](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/) for storage, `expo-keep-awake` and `expo-audio` for sessions, `expo-notifications` for local start-time reminders
 - Jest via `jest-expo`; database tests run against Node's built-in SQLite
 - TypeScript in strict mode, [Bun](https://bun.sh) as the package manager
 
@@ -50,8 +50,8 @@ src/features/           feature components and hooks, one folder per plan
 src/components/         shared UI (ScreenBar)
 src/theme/              Material 3 theme
 src/dev/                seed data, dev only
-modules/focus-mode/     Kotlin module: focus service, DND, blocking, calls
-plugins/                config plugins for the native manifest
+modules/focus-mode/     Kotlin module: focus service, DND, blocking, calls, widget
+plugins/                config plugins: manifest entries, Auto Backup rules
 test/                   test helpers
 ```
 
@@ -60,6 +60,8 @@ test/                   test helpers
 - Repos are plain async functions that take a `Db` handle (`src/db/types.ts`), a subset of the expo-sqlite API. Tests pass a Node SQLite implementation of the same interface (`test/nodeDb.ts`).
 - Navigation is a single stack with hidden headers. Every screen renders `ScreenBar`. There is no tab bar and no drawer.
 - Android only in v1. All code is platform neutral except `modules/focus-mode`.
+
+Privacy policy: [`docs/privacy-policy.md`](./docs/privacy-policy.md).
 
 ## Contributing
 

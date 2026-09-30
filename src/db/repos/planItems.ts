@@ -74,6 +74,19 @@ export async function getWithTask(db: Db, id: number): Promise<DayItem | null> {
   );
 }
 
+/** Plan items in a date range with their task's start time, for reminders and the widget. */
+export async function listWithStartTimes(
+  db: Db,
+  from: LocalDate,
+  to: LocalDate,
+): Promise<(PlanItem & { start_time: string | null })[]> {
+  return db.getAllAsync<PlanItem & { start_time: string | null }>(
+    `SELECT p.*, t.start_time FROM plan_items p JOIN tasks t ON t.id = p.task_id
+     WHERE p.plan_date BETWEEN ? AND ? ORDER BY p.plan_date, p.position, p.id`,
+    [from, to],
+  );
+}
+
 async function insertRows(db: Db, items: readonly PlanItemInput[]): Promise<number[]> {
   const ids: number[] = [];
   for (const item of items) {

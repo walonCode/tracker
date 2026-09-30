@@ -1,17 +1,26 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
 
-import { DatabaseProvider } from "@/db/DatabaseProvider";
+import { DatabaseProvider, useDb } from "@/db/DatabaseProvider";
 import { useOnboardingRedirect } from "@/features/onboarding/useOnboardingRedirect";
+import { refreshOutputs } from "@/features/refresh";
+import { useReminderTaps } from "@/features/reminders/reminders";
 import { useSessionRecovery } from "@/features/session/useSessionRecovery";
 import { useAppTheme, type AppTheme } from "@/theme";
 
 function Navigator({ theme }: { theme: AppTheme }) {
   useOnboardingRedirect();
   useSessionRecovery();
+  useReminderTaps();
+  const db = useDb();
+  // App start: rebuild reminders and the widget from the plan.
+  useEffect(() => {
+    refreshOutputs(db);
+  }, [db]);
   return (
     <Stack
       screenOptions={{

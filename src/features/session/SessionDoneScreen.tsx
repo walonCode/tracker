@@ -10,6 +10,7 @@ import * as sessions from "@/db/repos/sessions";
 import type { Session } from "@/db/types";
 import { cursorPrefix, usesCursor } from "@/domain/labels";
 import { canAnswerPartly, NOTE_MAX, remainingTarget, targetText, type FinishAnswer } from "@/domain/session";
+import { refreshOutputs } from "@/features/refresh";
 import { AmountStepper } from "@/features/tasks/AmountStepper";
 
 function leave() {
@@ -51,6 +52,7 @@ export function SessionDoneScreen() {
     setBusy(true);
     try {
       await sessions.finish(db, sessionId, result, note);
+      refreshOutputs(db);
       leave();
     } catch (e) {
       setBusy(false);
