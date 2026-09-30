@@ -31,6 +31,18 @@ export function remaining(item: ItemTime, openSession: SessionTime | null, now: 
   return Math.max(0, limitSeconds(item) - usedToday(item, openSession, now, pausedMs));
 }
 
+/** Milliseconds of `intervals` (phone calls) that fall inside `fromMs` to `toMs`. */
+export function overlapMs(
+  intervals: readonly { startMs: number; endMs: number }[],
+  fromMs: number,
+  toMs: number,
+): number {
+  return intervals.reduce(
+    (sum, { startMs, endMs }) => sum + Math.max(0, Math.min(endMs, toMs) - Math.max(startMs, fromMs)),
+    0,
+  );
+}
+
 /**
  * When a running session reaches the item's limit, in Unix seconds.
  * Null while paused or ended, since the clock is not moving.

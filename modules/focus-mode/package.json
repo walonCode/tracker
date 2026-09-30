@@ -1,0 +1,7 @@
+{
+  "name": "focus-mode",
+  "version": "1.0.0",
+  "description": "Focus sessions on Android: Do Not Disturb, app blocking, and call tracking",
+  "private": true,
+  "main": "index.ts"
+}

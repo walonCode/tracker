@@ -3,9 +3,9 @@ import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 
 import { useDb } from "@/db/DatabaseProvider";
-import * as sessions from "@/db/repos/sessions";
+import { reconcileSessions } from "./engine";
 
-const SESSION_ROUTES = ["/session", "/done"];
+const SESSION_ROUTES = ["/session", "/done", "/blocked"];
 
 /**
  * Runs `reconcileOpenSession` at app start and on every foreground return:
@@ -28,7 +28,7 @@ export function useSessionRecovery(): void {
     async function reconcile() {
       // These screens handle the open session themselves.
       if (SESSION_ROUTES.includes(pathRef.current)) return;
-      const recovery = await sessions.reconcileOpenSession(db);
+      const recovery = await reconcileSessions(db);
       if (recovery.kind === "session") router.push("/session");
       else if (recovery.kind === "finish") {
         router.push({ pathname: "/done", params: { session: String(recovery.sessionId) } });

@@ -15,6 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `bun run test src/domain/__tests__/dates.test.ts` or `bun run test -t "name"`: run one test file or test by name
 - `bun run format`: Prettier
 - `bunx expo prebuild -p android`: regenerate the gitignored `android/` native project
+- `cd android && ./gradlew :focus-mode:compileDebugKotlin`: compile only the native module. Gradle needs JDK 21 (`JAVA_HOME=~/.local/share/mise/installs/java/temurin-21`); the default JDK 27 fails with "Unsupported class file major version 71"
 
 Typecheck, lint, and test must all pass before a plan is merged. Tests cover only domain functions and repos; screens are verified by hand on a device. The app runs only in a development build (Expo Go is not supported, since plan 5 adds a native module).
 
@@ -26,9 +27,12 @@ The repo pivoted from a life-tracker app to **Focus**, a local-first Android foc
 
 Routing is file-based, rooted at `app/` (repo root, not `src/app`). Route files are one-line re-exports of screens from `src/features/<feature>/`; logic lives in the feature folder. Navigation is a single `Stack` with hidden headers; `app/_layout.tsx` wraps it in `GestureHandlerRootView` → `PaperProvider` → `DatabaseProvider`. `useOnboardingRedirect` holds the splash screen until it has checked the saved onboarding step and redirected an unfinished first run; `useSessionRecovery` reconciles an open session at launch and on every foreground return. Path aliases (`tsconfig.json`): `@/*` → `src/*`, `@/assets/*` → `assets/*`.
 
-- `src/db/`: `client.ts` (pragmas + migrations), `migrations.ts` (ordered SQL strings over `PRAGMA user_version`), `DatabaseProvider.tsx` (wraps `SQLiteProvider`, exposes `useDb()`), `repos/` (plain async functions taking a `Db`). Plan items dated today or earlier are locked (`PlanLockedError`); they change only through the session engine or Skip today. Repos for plans not yet built are typed stubs that call `notImplemented()`; implement them in place when their plan lands.
+- `src/db/`: `client.ts` (pragmas + migrations), `migrations.ts` (ordered SQL strings over `PRAGMA user_version`), `DatabaseProvider.tsx` (wraps `SQLiteProvider`, exposes `useDb()`), `repos/` (plain async functions taking a `Db`). Plan items dated today or earlier are locked (`PlanLockedError`); they change only through the session engine or Skip today.
 - `src/db/types.ts`: the `Db` interface (subset of expo-sqlite's `SQLiteDatabase`) and row types. Tests run repos against `test/nodeDb.ts` (Node's built-in `node:sqlite`); `jest.global-setup.js` pins `TZ` to America/New_York.
 - `src/domain/`: pure functions only (no React, React Native, or database imports). Read time only through `clock.ts` (`nowSeconds()`), never `Date.now()`; tests freeze time with `setClockSource()`.
+- `src/features/session/engine.ts`: the only way screens start, stop, or reconcile sessions. It wraps the `sessions` repo and focus mode together, so Do Not Disturb and blocking always follow the session, and subtracts phone-call time (`pausedMs`) from the timer.
+- `modules/focus-mode/`: local Expo module (Kotlin, Android only): a foreground service for Do Not Disturb, app blocking via `UsageStatsManager` polling, call tracking, and the end tone. Its state lives in SharedPreferences so it survives the JS process. `src/features/focus/focusMode.ts` wraps it and degrades to no-ops where the module is absent (Jest, web). Manifest entries come from the config plugin `plugins/withFocusMode.ts`, not from the module's own manifest.
+- Deep link (scheme `focusapp`): `/blocked`, opened by the focus service over a blocked app. `useSessionRecovery` must skip it.
 - `src/theme/`: React Native Paper Material 3 theme, `useAppTheme()`.
 - `src/components/ScreenBar.tsx`: the top bar used by every screen. No tab bar, no drawer.
 - `src/dev/seed.ts`: dev-only seed, run once from `DatabaseProvider` when `__DEV__` and `EXPO_PUBLIC_DEV_SEED` is not `0`.

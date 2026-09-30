@@ -1,11 +1,3 @@
-import { StubStep } from "@/features/onboarding/StubStep";
+import { OnboardingAppsScreen } from "@/features/focus/FocusSetupScreens";
 
-export default function AllowedAppsScreen() {
-  return (
-    <StubStep
-      title="Allowed apps"
-      intro="Choose the apps that stay open during a session. Phone is always allowed."
-      next="done"
-    />
-  );
-}
+export default OnboardingAppsScreen;
