@@ -11,7 +11,7 @@ The app is built in seven plans, `docs/plan1.md` to `docs/plan7.md`. Each plan l
 | 3 | Tasks and planning | Done |
 | 4 | Session engine and Today | Done |
 | 5 | Android focus mode (native module) | Built; device test matrix pending |
-| 6 | Log and statistics | Pending |
+| 6 | Log and statistics | Done |
 | 7 | Hardening and release | Pending |
 
 ## Tech stack
