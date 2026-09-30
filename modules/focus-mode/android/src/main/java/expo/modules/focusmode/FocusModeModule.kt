@@ -138,6 +138,15 @@ class FocusModeModule : Module() {
       )
     }
 
+    // Widget: `days` is [{ date, label }] for today and tomorrow; label null when nothing is planned.
+    Function("updateWidget") { days: List<Map<String, Any?>>, startUrl: String ->
+      val json = org.json.JSONArray()
+      for (day in days) {
+        json.put(org.json.JSONObject().put("date", day["date"]).put("label", day["label"] ?: ""))
+      }
+      NextTaskWidget.save(context, json.toString(), startUrl)
+    }
+
     // App start: DND applied by a focus whose service is gone (crash, reboot) is restored.
     Function("reconcile") {
       if (!FocusService.running) {

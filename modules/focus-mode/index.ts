@@ -27,6 +27,12 @@ export interface StartFocusOptions {
   blockedUrl: string;
 }
 
+/** The first planned task label for a local date, or null when nothing is planned. */
+export interface WidgetDay {
+  date: string;
+  label: string | null;
+}
+
 type FocusModeEvents = {
   onBlocked: (event: { packageName: string }) => void;
 };
@@ -46,6 +52,7 @@ declare class FocusModeNative extends NativeModule<FocusModeEvents> {
   stopFocus(): void;
   getCallIntervals(sinceMs: number): CallInterval[];
   getStatus(): FocusStatus;
+  updateWidget(days: WidgetDay[], startUrl: string): void;
   reconcile(): void;
 }
 

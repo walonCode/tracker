@@ -1,25 +1,22 @@
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState, type ReactElement } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Button, Card, Icon, Menu, ProgressBar, Text, TouchableRipple } from "react-native-paper";
+import { Button, Card, Icon, Menu, ProgressBar, Snackbar, Text, TouchableRipple } from "react-native-paper";
 
 import { ScreenBar, type OverflowItem } from "@/components/ScreenBar";
 import { useDb } from "@/db/DatabaseProvider";
+import * as backup from "@/db/repos/backup";
 import * as planItems from "@/db/repos/planItems";
 import * as sessions from "@/db/repos/sessions";
 import type { Session } from "@/db/types";
 import { today } from "@/domain/dates";
 import { nextItem } from "@/domain/session";
+import { pickAndImport, shareExport } from "@/features/backup/backupActions";
 import { GoalCard } from "@/features/goal/GoalCard";
 import { useActiveGoal } from "@/features/goal/useActiveGoal";
+import { refreshOutputs } from "@/features/refresh";
 import { startSession } from "@/features/session/engine";
 import { useAppTheme } from "@/theme";
-
-// Plan 7 adds Export data.
-const OVERFLOW_ITEMS: OverflowItem[] = [
-  { title: "Saved tasks", onPress: () => router.push("/tasks") },
-  { title: "Session settings", onPress: () => router.push("/settings") },
-];
 
 type DayItem = planItems.DayItem;
 
@@ -36,12 +33,48 @@ export function TodayScreen() {
   const [open, setOpen] = useState<Session | null>(null);
   const [menuFor, setMenuFor] = useState<number | null>(null);
   const [starting, setStarting] = useState(false);
+  const [importable, setImportable] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  // A tapped start-time reminder names the item to show as the Next card.
+  const focusId = Number(useLocalSearchParams<{ next?: string }>().next);
 
   const load = useCallback(async () => {
-    const [rows, openSession] = await Promise.all([planItems.listDayWithTasks(db, today()), sessions.getOpen(db)]);
+    const [rows, openSession, canImport] = await Promise.all([
+      planItems.listDayWithTasks(db, today()),
+      sessions.getOpen(db),
+      backup.canImport(db),
+    ]);
     setItems(rows);
     setOpen(openSession);
+    setImportable(canImport);
   }, [db]);
+
+  async function onExport() {
+    try {
+      await shareExport(db);
+    } catch {
+      setMessage("The export could not be written. Check free storage, then try again.");
+    }
+  }
+
+  async function onImport() {
+    try {
+      if (await pickAndImport(db)) {
+        refreshOutputs(db);
+        setMessage("Data imported.");
+        await load();
+      }
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "The import failed. Nothing was changed.");
+    }
+  }
+
+  const overflow: OverflowItem[] = [
+    { title: "Saved tasks", onPress: () => router.push("/tasks") },
+    { title: "Session settings", onPress: () => router.push("/settings") },
+    { title: "Export data", onPress: onExport },
+    ...(importable ? [{ title: "Import data", onPress: onImport }] : []),
+  ];
 
   useFocusEffect(
     useCallback(() => {
@@ -70,12 +103,14 @@ export function TodayScreen() {
     setMenuFor(null);
     try {
       await planItems.skip(db, item.id);
+      refreshOutputs(db);
     } finally {
       await load();
     }
   }
 
-  const next = items ? nextItem(items) : null;
+  const focused = items?.find((i) => i.id === focusId && i.status === "planned");
+  const next = focused ?? (items ? nextItem(items) : null);
 
   function withSkipMenu(item: DayItem, child: ReactElement) {
     return (
@@ -154,7 +189,7 @@ export function TodayScreen() {
 
   return (
     <View style={styles.root}>
-      <ScreenBar title="Today" back={false} menu={OVERFLOW_ITEMS} />
+      <ScreenBar title="Today" back={false} menu={overflow} />
       <ScrollView contentContainerStyle={styles.body}>
         {goal === null ? (
           <Button
@@ -188,6 +223,9 @@ export function TodayScreen() {
           </Button>
         </View>
       </ScrollView>
+      <Snackbar visible={message !== null} onDismiss={() => setMessage(null)} duration={6000}>
+        {message ?? ""}
+      </Snackbar>
     </View>
   );
 }

@@ -5,6 +5,7 @@ import type { Db, EndReason, Session } from "@/db/types";
 import { nowSeconds } from "@/domain/clock";
 import { overlapMs, remaining } from "@/domain/sessionMath";
 import * as focus from "@/features/focus/focusMode";
+import { refreshOutputs } from "@/features/refresh";
 
 // The session engine: the sessions repo plus focus mode. Screens start,
 // stop, and reconcile sessions only through here, so Do Not Disturb and
@@ -47,6 +48,7 @@ export async function stopSession(db: Db, sessionId: number, reason: EndReason):
     await sessions.stop(db, sessionId, reason, { at: now, pausedMs: pausedMsFor(session, now) });
   }
   focus.stopFocus();
+  refreshOutputs(db);
 }
 
 /**

@@ -24,6 +24,8 @@ import { TASK_UNITS, TIME_LIMITS, type Goal, type TaskUnit, type TimeLimit } fro
 import { TEXT_MAX } from "@/domain/goalRules";
 import { cursorPrefix, taskLabel, usesCursor } from "@/domain/labels";
 import { AMOUNT_MAX, AMOUNT_MIN, validateTaskTitle } from "@/domain/taskRules";
+import { refreshOutputs } from "@/features/refresh";
+import { requestReminderPermission } from "@/features/reminders/reminders";
 
 import { AmountStepper } from "./AmountStepper";
 import { setJustCreated } from "./justCreated";
@@ -142,6 +144,8 @@ export function TaskFormScreen() {
         const created = await tasks.create(db, input);
         if (params.from === "plan") setJustCreated(created.id);
       }
+      if (input.startTime) await requestReminderPermission(db).catch(() => {});
+      refreshOutputs(db);
       router.back();
     } catch (e) {
       setBusy(false);
@@ -152,6 +156,7 @@ export function TaskFormScreen() {
   async function onArchive() {
     if (editId === null) return;
     await tasks.archive(db, editId);
+    refreshOutputs(db);
     setArchiveOpen(false);
     router.back();
   }
