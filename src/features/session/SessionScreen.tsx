@@ -14,9 +14,11 @@ import { nowSeconds } from "@/domain/clock";
 import { formatClock } from "@/domain/dates";
 import { remainingTarget, targetText } from "@/domain/session";
 import { remaining } from "@/domain/sessionMath";
+import * as focus from "@/features/focus/focusMode";
 import { useAppTheme } from "@/theme";
 
 import { playEndSound } from "./endSound";
+import { pausedMsFor, reconcileSessions, stopSession } from "./engine";
 
 type Loaded =
   | { kind: "none" }
@@ -25,11 +27,22 @@ type Loaded =
 
 /** Reconciles, then loads the open session with its item. */
 async function loadOpenSession(db: Db): Promise<Loaded> {
-  const recovery = await sessions.reconcileOpenSession(db);
+  const recovery = await reconcileSessions(db);
   if (recovery.kind !== "session") return recovery;
   const session = await sessions.get(db, recovery.sessionId);
   const item = session ? await planItems.getWithTask(db, session.plan_item_id) : null;
   return session && item ? { kind: "session", session, item } : { kind: "none" };
+}
+
+/**
+ * The status line under the timer: DND on, or one small line when blocking
+ * is off (a missing permission, or a service the system killed). Nothing
+ * where focus mode is not built in.
+ */
+function focusStatusLine(now: number): { kind: "on" | "off" } | null {
+  if (!focus.focusAvailable) return null;
+  if (!focus.blockingPermitted() || !focus.serviceAlive(now * 1000)) return { kind: "off" };
+  return focus.getStatus().dndOn ? { kind: "on" } : null;
 }
 
 /**
@@ -98,14 +111,15 @@ export function SessionScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  const left = session && item ? remaining(item, session, now) : null;
+  const left = session && item ? remaining(item, session, now, pausedMsFor(session, now)) : null;
 
   // The limit: end at the limit time, play the tone, go to the finish check.
+  // With focus mode the service plays the tone on the alarm stream instead.
   useEffect(() => {
     if (left !== 0 || !session || session.state !== "running" || ending.current) return;
     ending.current = true;
-    sessions.reconcileOpenSession(db).then((recovery) => {
-      playEndSound().catch(() => {});
+    reconcileSessions(db).then((recovery) => {
+      if (!focus.focusAvailable) playEndSound().catch(() => {});
       const id = recovery.kind === "none" ? session.id : recovery.sessionId;
       router.replace({ pathname: "/done", params: { session: String(id) } });
     });
@@ -115,9 +129,11 @@ export function SessionScreen() {
     if (!session || ending.current) return;
     ending.current = true;
     setStopping(true);
-    await sessions.stop(db, session.id, "stopped");
+    await stopSession(db, session.id, "stopped");
     router.replace({ pathname: "/done", params: { session: String(session.id) } });
   }
+
+  const status = focusStatusLine(now);
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
@@ -143,7 +159,15 @@ export function SessionScreen() {
             {session.state === "paused" ? <Text variant="bodyMedium">Paused during a call</Text> : null}
           </View>
           <View style={styles.bottom}>
-            {/* Plan 5: focus status line. */}
+            {status?.kind === "on" ? (
+              <Text variant="bodyMedium" style={styles.center}>
+                Do Not Disturb on, calls allowed
+              </Text>
+            ) : status?.kind === "off" ? (
+              <Button mode="text" compact onPress={() => router.push("/settings")}>
+                Blocking is off, permissions missing
+              </Button>
+            ) : null}
             <Button mode="contained" onPress={onStop} loading={stopping} disabled={stopping} style={styles.stop}>
               Stop
             </Button>

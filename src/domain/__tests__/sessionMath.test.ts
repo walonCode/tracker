@@ -1,5 +1,5 @@
 import { applyFinish, canAnswerPartly, nextItem, remainingTarget, targetText } from "../session";
-import { elapsed, limitReachedAt, remaining, usedToday } from "../sessionMath";
+import { elapsed, limitReachedAt, overlapMs, remaining, usedToday } from "../sessionMath";
 
 const T0 = 1_800_000_000;
 const item = { limit_minutes: 30, used_seconds: 0 };
@@ -25,6 +25,16 @@ describe("sessionMath", () => {
     expect(remaining(partUsed, running, T0 + 18 * 60)).toBe(0);
     expect(remaining(partUsed, running, T0 + 3600)).toBe(0);
     expect(remaining(item, null, T0)).toBe(1800);
+  });
+
+  it("overlapMs sums only the call time inside the window", () => {
+    const calls = [
+      { startMs: 0, endMs: 5_000 },
+      { startMs: 8_000, endMs: 12_000 },
+      { startMs: 20_000, endMs: 30_000 },
+    ];
+    expect(overlapMs(calls, 3_000, 25_000)).toBe(2_000 + 4_000 + 5_000);
+    expect(overlapMs([], 0, 10_000)).toBe(0);
   });
 
   it("limitReachedAt accounts for used time and pauses", () => {

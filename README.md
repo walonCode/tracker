@@ -10,7 +10,7 @@ The app is built in seven plans, `docs/plan1.md` to `docs/plan7.md`. Each plan l
 | 2 | Goal and first run | Done |
 | 3 | Tasks and planning | Done |
 | 4 | Session engine and Today | Done |
-| 5 | Android focus mode (native module) | Pending |
+| 5 | Android focus mode (native module) | Built; device test matrix pending |
 | 6 | Log and statistics | Pending |
 | 7 | Hardening and release | Pending |
 
@@ -50,7 +50,8 @@ src/features/           feature components and hooks, one folder per plan
 src/components/         shared UI (ScreenBar)
 src/theme/              Material 3 theme
 src/dev/                seed data, dev only
-modules/focus-mode/     Kotlin module (plan 5)
+modules/focus-mode/     Kotlin module: focus service, DND, blocking, calls
+plugins/                config plugins for the native manifest
 test/                   test helpers
 ```
 

@@ -1,12 +1,17 @@
 import type { AllowedApp, Db } from "../types";
-import { notImplemented } from "./notImplemented";
 
-// Implemented in plan 5.
-
-export async function list(_db: Db): Promise<AllowedApp[]> {
-  return notImplemented("allowedApps.list");
+/** Apps the user allows during a session, beyond the always-allowed ones. */
+export async function list(db: Db): Promise<AllowedApp[]> {
+  return db.getAllAsync<AllowedApp>("SELECT * FROM allowed_apps ORDER BY label COLLATE NOCASE", []);
 }
 
-export async function setAllowed(_db: Db, _app: AllowedApp, _allowed: boolean): Promise<void> {
-  return notImplemented("allowedApps.setAllowed");
+export async function setAllowed(db: Db, app: AllowedApp, allowed: boolean): Promise<void> {
+  if (allowed) {
+    await db.runAsync(
+      "INSERT INTO allowed_apps (package_name, label) VALUES (?, ?) ON CONFLICT(package_name) DO UPDATE SET label = excluded.label",
+      [app.package_name, app.label],
+    );
+  } else {
+    await db.runAsync("DELETE FROM allowed_apps WHERE package_name = ?", [app.package_name]);
+  }
 }

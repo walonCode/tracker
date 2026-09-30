@@ -12,10 +12,14 @@ import { today } from "@/domain/dates";
 import { nextItem } from "@/domain/session";
 import { GoalCard } from "@/features/goal/GoalCard";
 import { useActiveGoal } from "@/features/goal/useActiveGoal";
+import { startSession } from "@/features/session/engine";
 import { useAppTheme } from "@/theme";
 
-// Plan 5 adds Session settings and plan 7 adds Export data.
-const OVERFLOW_ITEMS: OverflowItem[] = [{ title: "Saved tasks", onPress: () => router.push("/tasks") }];
+// Plan 7 adds Export data.
+const OVERFLOW_ITEMS: OverflowItem[] = [
+  { title: "Saved tasks", onPress: () => router.push("/tasks") },
+  { title: "Session settings", onPress: () => router.push("/settings") },
+];
 
 type DayItem = planItems.DayItem;
 
@@ -52,7 +56,7 @@ export function TodayScreen() {
     }
     setStarting(true);
     try {
-      await sessions.start(db, item.id);
+      await startSession(db, item.id);
       router.push("/session");
     } catch (e) {
       if (e instanceof sessions.SessionAlreadyOpen) router.push("/session");

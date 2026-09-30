@@ -1,11 +1,3 @@
-import { StubStep } from "@/features/onboarding/StubStep";
+import { OnboardingPermissionsScreen } from "@/features/focus/FocusSetupScreens";
 
-export default function PermissionsScreen() {
-  return (
-    <StubStep
-      title="Permissions"
-      intro="Blocking needs a few system permissions. You can skip them; sessions then run as a timer only."
-      next="apps"
-    />
-  );
-}
+export default OnboardingPermissionsScreen;
