@@ -6,10 +6,12 @@ import { PaperProvider } from "react-native-paper";
 
 import { DatabaseProvider } from "@/db/DatabaseProvider";
 import { useOnboardingRedirect } from "@/features/onboarding/useOnboardingRedirect";
+import { useSessionRecovery } from "@/features/session/useSessionRecovery";
 import { useAppTheme, type AppTheme } from "@/theme";
 
 function Navigator({ theme }: { theme: AppTheme }) {
   useOnboardingRedirect();
+  useSessionRecovery();
   return (
     <Stack
       screenOptions={{
@@ -26,7 +28,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <PaperProvider theme={theme}>
-        <StatusBar style={theme.dark ? "light" : "dark"} />
+        <StatusBar style={theme.dark ? "light" : "dark"} hidden={false} />
         <DatabaseProvider>
           <Navigator theme={theme} />
         </DatabaseProvider>

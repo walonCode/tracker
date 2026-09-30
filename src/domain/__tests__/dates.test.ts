@@ -2,6 +2,7 @@ import { resetClockSource, setClockSource } from "../clock";
 import {
   addDays,
   daysBetween,
+  formatClock,
   formatDate,
   formatDuration,
   formatMinutes,
@@ -117,7 +118,13 @@ describe("formatDate", () => {
   });
 });
 
-describe("formatMinutes", () => {
+describe("formatClock and formatMinutes", () => {
+  it("keeps minutes past an hour on the countdown", () => {
+    expect(formatClock(0)).toBe("00:00");
+    expect(formatClock(59)).toBe("00:59");
+    expect(formatClock(5400)).toBe("90:00");
+  });
+
   it("formats planned totals", () => {
     expect(formatMinutes(45)).toBe("45 min");
     expect(formatMinutes(60)).toBe("1 h");

@@ -75,6 +75,12 @@ export function formatDate(date: LocalDate, reference?: LocalDate): string {
   return reference && parse(reference).y === y ? base : `${base} ${y}`;
 }
 
+/** A countdown reading, `mm:ss`, with minutes past 59 kept (`90:00`). */
+export function formatClock(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  return `${pad2(Math.floor(total / 60))}:${pad2(total % 60)}`;
+}
+
 /** A planned amount of time: `45 min`, `1 h 35 min`, `2 h`. */
 export function formatMinutes(minutes: number): string {
   const total = Math.max(0, Math.round(minutes));
