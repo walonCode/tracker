@@ -4,6 +4,8 @@ import {
   daysBetween,
   formatClock,
   formatDate,
+  formatDayMonth,
+  formatLongDate,
   formatDuration,
   formatMinutes,
   localDate,
@@ -129,5 +131,13 @@ describe("formatClock and formatMinutes", () => {
     expect(formatMinutes(45)).toBe("45 min");
     expect(formatMinutes(60)).toBe("1 h");
     expect(formatMinutes(95)).toBe("1 h 35 min");
+  });
+});
+
+describe("formatLongDate and formatDayMonth", () => {
+  it("writes the weekday in full and the year only when it differs", () => {
+    expect(formatLongDate("2026-09-30")).toBe("Wednesday 30 Sep");
+    expect(formatDayMonth("2026-10-12", "2026-09-30")).toBe("12 Oct");
+    expect(formatDayMonth("2027-01-05", "2026-09-30")).toBe("5 Jan 2027");
   });
 });

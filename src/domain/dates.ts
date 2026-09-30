@@ -75,6 +75,21 @@ export function formatDate(date: LocalDate, reference?: LocalDate): string {
   return reference && parse(reference).y === y ? base : `${base} ${y}`;
 }
 
+const LONG_WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+/** `Wednesday 30 Sep`, for Today's subtitle. */
+export function formatLongDate(date: LocalDate): string {
+  const { m, d } = parse(date);
+  return `${LONG_WEEKDAYS[weekdayOf(date)]} ${d} ${MONTHS[m - 1]}`;
+}
+
+/** `12 Oct`, with the year when it differs from `reference`'s. */
+export function formatDayMonth(date: LocalDate, reference?: LocalDate): string {
+  const { y, m, d } = parse(date);
+  const base = `${d} ${MONTHS[m - 1]}`;
+  return reference && parse(reference).y !== y ? `${base} ${y}` : base;
+}
+
 /** A countdown reading, `mm:ss`, with minutes past 59 kept (`90:00`). */
 export function formatClock(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds));

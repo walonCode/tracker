@@ -1,23 +1,25 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
-import { Appbar, List, Text } from "react-native-paper";
+import { IconButton } from "react-native-paper";
 
+import { Screen } from "@/components/Screen";
 import { ScreenBar } from "@/components/ScreenBar";
+import { Action, Hint, Row } from "@/components/ui";
 import { useDb } from "@/db/DatabaseProvider";
 import * as tasks from "@/db/repos/tasks";
-import type { Task } from "@/db/types";
-import { taskLabel } from "@/domain/labels";
+import { repeatText, taskLabel } from "@/domain/labels";
+import type { TaskWithRepeats } from "@/domain/planBuilder";
 
 /** Saved tasks, from the Today overflow menu. Tap to edit; archive from the edit screen. */
 export function SavedTasksScreen() {
   const db = useDb();
-  const [rows, setRows] = useState<Task[] | null>(null);
+  const [rows, setRows] = useState<TaskWithRepeats[] | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      tasks.list(db).then((result) => {
+      tasks.listWithRepeatDays(db).then((result) => {
         if (active) setRows(result);
       });
       return () => {
@@ -26,36 +28,45 @@ export function SavedTasksScreen() {
     }, [db]),
   );
 
+  const newTask = () => router.push("/task");
+
   return (
-    <View style={styles.root}>
-      <ScreenBar
-        title="Saved tasks"
-        right={<Appbar.Action icon="plus" accessibilityLabel="New task" onPress={() => router.push("/task")} />}
-      />
+    <Screen
+      bar={
+        <ScreenBar
+          title="Saved tasks"
+          subtitle="Tap one to edit it"
+          right={<IconButton icon="plus" accessibilityLabel="New task" onPress={newTask} />}
+        />
+      }
+      scroll={false}
+    >
       {rows?.length === 0 ? (
-        <Text variant="bodyLarge" style={styles.empty}>
-          No saved tasks yet.
-        </Text>
+        <View style={styles.empty}>
+          <Hint>No saved tasks yet. A task has an amount and a time limit, and can repeat on chosen days.</Hint>
+          <Action onPress={newTask}>New task</Action>
+        </View>
       ) : (
         <FlatList
           data={rows ?? []}
           keyExtractor={(task) => String(task.id)}
+          contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <List.Item
+            <Row
               title={taskLabel(item)}
-              description={item.detail}
-              titleNumberOfLines={2}
-              right={(props) => <List.Icon {...props} icon="chevron-right" />}
+              description={[`${item.default_minutes} min`, repeatText(item.repeat_days), item.detail]
+                .filter(Boolean)
+                .join(", ")}
               onPress={() => router.push({ pathname: "/task", params: { id: String(item.id) } })}
             />
           )}
         />
       )}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  empty: { padding: 16 },
+  list: { paddingHorizontal: 20 },
+  empty: { paddingHorizontal: 20, gap: 16, paddingTop: 8 },
 });

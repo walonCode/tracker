@@ -1,14 +1,13 @@
 import type { ReactNode } from "react";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ScrollView, StyleSheet, View } from "react-native";
-import { Button, Text } from "react-native-paper";
 
+import { Screen } from "@/components/Screen";
 import { ScreenBar } from "@/components/ScreenBar";
+import { Action } from "@/components/ui";
 
 interface StepScreenProps {
   title: string;
+  subtitle?: string;
   back?: boolean;
-  intro?: string;
   children?: ReactNode;
   actionLabel: string;
   onAction: () => void;
@@ -16,26 +15,17 @@ interface StepScreenProps {
 }
 
 /** Shared frame for the first-run screens: bar, content, one filled action. */
-export function StepScreen({ title, back = false, intro, children, actionLabel, onAction, busy }: StepScreenProps) {
-  const insets = useSafeAreaInsets();
+export function StepScreen({ title, subtitle, back = false, children, actionLabel, onAction, busy }: StepScreenProps) {
   return (
-    <View style={styles.root}>
-      <ScreenBar title={title} back={back} />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {intro ? <Text variant="bodyLarge">{intro}</Text> : null}
-        {children}
-      </ScrollView>
-      <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
-        <Button mode="contained" onPress={onAction} loading={busy} disabled={busy}>
+    <Screen
+      bar={<ScreenBar title={title} subtitle={subtitle} back={back} />}
+      footer={
+        <Action onPress={onAction} loading={busy}>
           {actionLabel}
-        </Button>
-      </View>
-    </View>
+        </Action>
+      }
+    >
+      {children}
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  content: { padding: 16, gap: 16 },
-  footer: { padding: 16 },
-});

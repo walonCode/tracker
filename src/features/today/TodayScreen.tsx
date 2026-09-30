@@ -1,15 +1,17 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState, type ReactElement } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
-import { Button, Card, Icon, Menu, ProgressBar, Snackbar, Text, TouchableRipple } from "react-native-paper";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Button, Icon, Menu, ProgressBar, Snackbar, Text } from "react-native-paper";
 
+import { Screen } from "@/components/Screen";
 import { ScreenBar, type OverflowItem } from "@/components/ScreenBar";
+import { Action, Hint, Row } from "@/components/ui";
 import { useDb } from "@/db/DatabaseProvider";
 import * as backup from "@/db/repos/backup";
 import * as planItems from "@/db/repos/planItems";
 import * as sessions from "@/db/repos/sessions";
 import type { Session } from "@/db/types";
-import { today } from "@/domain/dates";
+import { formatLongDate, today } from "@/domain/dates";
 import { nextItem } from "@/domain/session";
 import { pickAndImport, shareExport } from "@/features/backup/backupActions";
 import { GoalCard } from "@/features/goal/GoalCard";
@@ -24,7 +26,7 @@ function minutes(seconds: number): number {
   return Math.round(seconds / 60);
 }
 
-/** Screen 7: goal card, today's list with the Next card, then Plan tomorrow. */
+/** Screen 7: goal line, today's list with the Next card, then Log and Plan tomorrow. */
 export function TodayScreen() {
   const db = useDb();
   const theme = useAppTheme();
@@ -48,6 +50,12 @@ export function TodayScreen() {
     setOpen(openSession);
     setImportable(canImport);
   }, [db]);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   async function onExport() {
     try {
@@ -75,12 +83,6 @@ export function TodayScreen() {
     { title: "Export data", onPress: onExport },
     ...(importable ? [{ title: "Import data", onPress: onImport }] : []),
   ];
-
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
 
   async function onStart(item: DayItem) {
     if (open) {
@@ -114,14 +116,19 @@ export function TodayScreen() {
 
   function withSkipMenu(item: DayItem, child: ReactElement) {
     return (
-      <Menu
-        key={item.id}
-        visible={menuFor === item.id}
-        onDismiss={() => setMenuFor(null)}
-        anchor={child}
-      >
+      <Menu key={item.id} visible={menuFor === item.id} onDismiss={() => setMenuFor(null)} anchor={child}>
         <Menu.Item leadingIcon="debug-step-over" title="Skip today" onPress={() => onSkip(item)} />
       </Menu>
+    );
+  }
+
+  function Circle({ done }: { done: boolean }) {
+    return done ? (
+      <View style={[styles.circle, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}>
+        <Icon source="check" size={14} color={theme.colors.onPrimary} />
+      </View>
+    ) : (
+      <View style={[styles.circle, { borderColor: theme.colors.onSurfaceVariant }]} />
     );
   }
 
@@ -129,34 +136,28 @@ export function TodayScreen() {
     const done = item.status === "done";
     const closed = item.status === "skipped" || item.status === "dropped";
     const canSkip = item.status === "planned" && open?.plan_item_id !== item.id;
+    const trailing = done
+      ? `${minutes(item.used_seconds)} / ${item.limit_minutes}`
+      : item.status === "skipped"
+        ? "Skipped"
+        : item.status === "dropped"
+          ? "Dropped"
+          : `${item.limit_minutes} min`;
     const row = (
-      <TouchableRipple
-        onLongPress={canSkip ? () => setMenuFor(item.id) : undefined}
-        accessibilityHint={canSkip ? "Long-press for Skip today" : undefined}
-      >
-        <View style={styles.row}>
-          <Icon
-            source={done ? "check-circle" : closed ? "minus-circle-outline" : "circle-outline"}
-            size={22}
-            color={done ? theme.colors.primary : theme.colors.onSurfaceVariant}
-          />
-          <Text
-            variant="bodyLarge"
-            style={[styles.grow, (done || closed) && styles.struck, closed && { color: theme.colors.onSurfaceVariant }]}
-          >
-            {item.label_snapshot}
-          </Text>
-          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-            {done
-              ? `${minutes(item.used_seconds)} / ${item.limit_minutes}`
-              : item.status === "skipped"
-                ? "Skipped"
-                : item.status === "dropped"
-                  ? "Dropped"
-                  : ""}
-          </Text>
-        </View>
-      </TouchableRipple>
+      <View>
+        <Row
+          title={item.label_snapshot}
+          struck={done || closed}
+          left={closed ? <Icon source="minus-circle-outline" size={24} color={theme.colors.onSurfaceVariant} /> : <Circle done={done} />}
+          right={
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+              {trailing}
+            </Text>
+          }
+          onLongPress={canSkip ? () => setMenuFor(item.id) : undefined}
+          accessibilityHint={canSkip ? "Long-press for Skip today" : undefined}
+        />
+      </View>
     );
     return canSkip ? withSkipMenu(item, row) : <View key={item.id}>{row}</View>;
   }
@@ -164,81 +165,93 @@ export function TodayScreen() {
   function renderNext(item: DayItem) {
     const used = minutes(item.used_seconds);
     const isOpen = open?.plan_item_id === item.id;
+    const onTonal = theme.colors.onPrimaryContainer;
     const card = (
-      <Card mode="contained" onLongPress={isOpen ? undefined : () => setMenuFor(item.id)}>
-        <Card.Content style={styles.nextContent}>
-          <Text variant="labelMedium">Next</Text>
-          <Text variant="titleMedium">{item.label_snapshot}</Text>
-          {item.detail ? <Text variant="bodyMedium">{item.detail}</Text> : null}
-          {item.used_seconds > 0 ? (
-            <View style={styles.progress}>
-              <Text variant="bodySmall">{`${used} of ${item.limit_minutes} min used`}</Text>
-              <ProgressBar progress={Math.min(1, item.used_seconds / (item.limit_minutes * 60))} />
-            </View>
-          ) : null}
-        </Card.Content>
-        <Card.Actions>
-          <Button mode="contained" onPress={() => onStart(item)} loading={starting} disabled={starting}>
-            {isOpen || item.used_seconds > 0 ? "Resume" : "Start"}
-          </Button>
-        </Card.Actions>
-      </Card>
+      <Pressable
+        onLongPress={isOpen ? undefined : () => setMenuFor(item.id)}
+        style={[styles.next, { backgroundColor: theme.colors.primaryContainer }]}
+        accessibilityHint={isOpen ? undefined : "Long-press for Skip today"}
+      >
+        <Text variant="labelMedium" style={{ color: onTonal, opacity: 0.85 }}>
+          Next
+        </Text>
+        <Text variant="headlineSmall" style={[styles.nextTitle, { color: onTonal }]}>
+          {item.label_snapshot}
+        </Text>
+        {item.detail ? (
+          <Text variant="bodyMedium" style={{ color: onTonal, opacity: 0.85 }}>
+            {item.detail}
+          </Text>
+        ) : null}
+        {item.used_seconds > 0 ? (
+          <View style={styles.progress}>
+            <Text variant="labelMedium" style={{ color: onTonal, opacity: 0.85 }}>
+              {`${used} of ${item.limit_minutes} min used`}
+            </Text>
+            <ProgressBar
+              progress={Math.min(1, item.used_seconds / (item.limit_minutes * 60))}
+              style={styles.track}
+              color={theme.colors.primary}
+            />
+          </View>
+        ) : null}
+        <Action onPress={() => onStart(item)} loading={starting} style={styles.start}>
+          {isOpen || item.used_seconds > 0 ? "Resume" : "Start"}
+        </Action>
+      </Pressable>
     );
     return isOpen ? <View key={item.id}>{card}</View> : withSkipMenu(item, card);
   }
 
   return (
-    <View style={styles.root}>
-      <ScreenBar title="Today" back={false} menu={overflow} />
-      <ScrollView contentContainerStyle={styles.body}>
-        {goal === null ? (
-          <Button
-            mode="contained"
-            style={styles.nextGoal}
-            onPress={() => router.push({ pathname: "/onboarding/goal", params: { mode: "next" } })}
-          >
-            Set your next goal
-          </Button>
-        ) : goal ? (
-          <GoalCard goal={goal} />
-        ) : null}
-
-        {items && items.length === 0 ? (
-          <View style={styles.empty}>
-            <Text variant="bodyLarge">Nothing planned for today</Text>
-            <Button mode="outlined" onPress={() => router.push({ pathname: "/plan", params: { date: today() } })}>
-              Plan today
-            </Button>
-          </View>
-        ) : null}
-
-        <View>{items?.map((item) => (item === next ? renderNext(item) : renderRow(item)))}</View>
-
+    <Screen
+      bar={<ScreenBar title="Today" subtitle={formatLongDate(today())} back={false} menu={overflow} />}
+      footer={
         <View style={styles.links}>
-          <Button mode="text" onPress={() => router.push("/log")}>
+          <Button mode="text" onPress={() => router.push("/log")} contentStyle={styles.linkContent}>
             Log
           </Button>
-          <Button mode="text" onPress={() => router.push("/plan")}>
+          <Button mode="text" onPress={() => router.push("/plan")} contentStyle={styles.linkContent}>
             Plan tomorrow
           </Button>
         </View>
-      </ScrollView>
+      }
+      contentStyle={styles.content}
+    >
+      {goal === null ? (
+        <Action kind="tonal" onPress={() => router.push({ pathname: "/onboarding/goal", params: { mode: "next" } })}>
+          Set your next goal
+        </Action>
+      ) : goal ? (
+        <GoalCard goal={goal} />
+      ) : null}
+
+      {items && items.length === 0 ? (
+        <View style={styles.empty}>
+          <Text variant="titleMedium">Nothing planned for today</Text>
+          <Hint>Pick what you will do today, then start the first task.</Hint>
+          <Action onPress={() => router.push({ pathname: "/plan", params: { date: today() } })}>Plan today</Action>
+        </View>
+      ) : null}
+
+      <View>{items?.map((item) => (item === next ? renderNext(item) : renderRow(item)))}</View>
+
       <Snackbar visible={message !== null} onDismiss={() => setMessage(null)} duration={6000}>
         {message ?? ""}
       </Snackbar>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  body: { padding: 16, gap: 16 },
-  grow: { flex: 1 },
-  struck: { textDecorationLine: "line-through" },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 4 },
-  nextContent: { gap: 4 },
-  progress: { gap: 4, marginTop: 4 },
-  nextGoal: { alignSelf: "center" },
-  empty: { alignItems: "center", gap: 12, paddingVertical: 24 },
-  links: { flexDirection: "row", justifyContent: "center" },
+  content: { gap: 12 },
+  circle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  next: { borderRadius: 16, padding: 16, marginVertical: 8, gap: 4 },
+  nextTitle: { fontWeight: "500" },
+  progress: { gap: 6, marginTop: 6 },
+  track: { height: 6, borderRadius: 3 },
+  start: { marginTop: 12 },
+  empty: { gap: 12, paddingVertical: 16 },
+  links: { flexDirection: "row", justifyContent: "space-between" },
+  linkContent: { height: 48 },
 });

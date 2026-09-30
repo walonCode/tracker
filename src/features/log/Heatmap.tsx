@@ -5,8 +5,8 @@ import { formatDate, type LocalDate } from "@/domain/dates";
 import type { GridCell, ShadeLevel } from "@/domain/heatmap";
 import { useAppTheme } from "@/theme";
 
-const GAP = 4;
-const SIDE_PADDING = 16;
+const GAP = 3;
+const SIDE_PADDING = 20;
 
 export type CellValue = { kind: "minutes"; minutes: number; level: ShadeLevel } | { kind: "hit"; hit: boolean };
 

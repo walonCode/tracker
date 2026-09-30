@@ -1,31 +1,22 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ScrollView, StyleSheet, View } from "react-native";
-import {
-  Appbar,
-  Button,
-  Card,
-  Chip,
-  Dialog,
-  HelperText,
-  Portal,
-  Switch,
-  Text,
-  TextInput,
-} from "react-native-paper";
+import { StyleSheet, View } from "react-native";
+import { Button, Dialog, HelperText, IconButton, Portal, Switch, Text, TextInput } from "react-native-paper";
 import { TimePickerModal } from "react-native-paper-dates";
 
+import { Screen } from "@/components/Screen";
 import { ScreenBar } from "@/components/ScreenBar";
+import { Action, ChoiceChip, Label } from "@/components/ui";
 import { useDb } from "@/db/DatabaseProvider";
 import * as goals from "@/db/repos/goals";
 import * as tasks from "@/db/repos/tasks";
 import { TASK_UNITS, TIME_LIMITS, type Goal, type TaskUnit, type TimeLimit } from "@/db/types";
 import { TEXT_MAX } from "@/domain/goalRules";
-import { cursorPrefix, taskLabel, usesCursor } from "@/domain/labels";
+import { taskLabel, usesCursor } from "@/domain/labels";
 import { AMOUNT_MAX, AMOUNT_MIN, validateTaskTitle } from "@/domain/taskRules";
 import { refreshOutputs } from "@/features/refresh";
 import { requestReminderPermission } from "@/features/reminders/reminders";
+import { useAppTheme } from "@/theme";
 
 import { AmountStepper } from "./AmountStepper";
 import { setJustCreated } from "./justCreated";
@@ -71,7 +62,7 @@ function parseCursor(text: string): number | null {
  */
 export function TaskFormScreen() {
   const db = useDb();
-  const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
   const params = useLocalSearchParams<{ id?: string; title?: string; from?: string }>();
   const editId = params.id ? Number(params.id) : null;
   const [form, setForm] = useState<Form>({ ...EMPTY, title: params.title ?? "" });
@@ -164,145 +155,151 @@ export function TaskFormScreen() {
   const [hours, minutes] = form.startTime ? form.startTime.split(":").map(Number) : [undefined, undefined];
 
   return (
-    <View style={styles.root}>
-      <ScreenBar
-        title={editId === null ? "New task" : "Edit task"}
-        right={
-          editId !== null ? (
-            <Appbar.Action icon="archive-outline" accessibilityLabel="Archive task" onPress={() => setArchiveOpen(true)} />
-          ) : null
-        }
-      />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {loaded ? (
-          <>
-            <View>
-              <TextInput
-                mode="outlined"
-                label="What"
-                value={form.title}
-                onChangeText={(title) => update({ title })}
-                maxLength={TEXT_MAX}
-                error={Boolean(titleError)}
-              />
-              <HelperText type="error" visible={Boolean(titleError)}>
-                {titleError}
-              </HelperText>
-              <TextInput
-                mode="outlined"
-                label="Details (optional)"
-                value={form.detail}
-                onChangeText={(detail) => update({ detail })}
-                maxLength={TEXT_MAX}
-              />
+    <Screen
+      bar={
+        <ScreenBar
+          title={editId === null ? "New task" : "Edit task"}
+          onClose={() => router.back()}
+          right={
+            editId !== null ? (
+              <IconButton icon="archive-outline" accessibilityLabel="Archive task" onPress={() => setArchiveOpen(true)} />
+            ) : null
+          }
+        />
+      }
+      footer={
+        <Action onPress={onSave} loading={busy} disabled={!loaded}>
+          Save task
+        </Action>
+      }
+    >
+      {loaded ? (
+        <>
+          <View>
+            <TextInput
+              mode="outlined"
+              label="What"
+              placeholder="Read Quran"
+              value={form.title}
+              onChangeText={(title) => update({ title })}
+              maxLength={TEXT_MAX}
+              error={Boolean(titleError)}
+            />
+            {titleError ? <HelperText type="error">{titleError}</HelperText> : null}
+          </View>
+
+          <Section label="How much">
+            <AmountStepper
+              label="Amount"
+              value={form.amount}
+              min={AMOUNT_MIN}
+              max={AMOUNT_MAX}
+              onChange={(amount) => update({ amount })}
+            />
+            <View style={styles.chips}>
+              {TASK_UNITS.map((unit) => (
+                <ChoiceChip key={unit} selected={form.unit === unit} onPress={() => update({ unit })}>
+                  {unit}
+                </ChoiceChip>
+              ))}
             </View>
+          </Section>
 
-            <Section label="How much">
-              <AmountStepper
-                label="Amount"
-                value={form.amount}
-                min={AMOUNT_MIN}
-                max={AMOUNT_MAX}
-                onChange={(amount) => update({ amount })}
+          {usesCursor(form.unit) ? (
+            <Section label="Starts at">
+              <TextInput
+                mode="outlined"
+                dense
+                style={styles.cursor}
+                label={form.unit === "verses" ? "Verse" : "Page"}
+                keyboardType="number-pad"
+                value={form.cursor}
+                onChangeText={(text) => update({ cursor: text.replace(/\D/g, "") })}
+                maxLength={6}
               />
-              <View style={styles.chips}>
-                {TASK_UNITS.map((unit) => (
-                  <Chip key={unit} selected={form.unit === unit} showSelectedOverlay onPress={() => update({ unit })}>
-                    {unit}
-                  </Chip>
-                ))}
-              </View>
             </Section>
+          ) : null}
 
-            {usesCursor(form.unit) ? (
-              <Section label="Starts at">
-                <TextInput
-                  mode="outlined"
-                  dense
-                  style={styles.cursor}
-                  accessibilityLabel="Starts at"
-                  keyboardType="number-pad"
-                  left={<TextInput.Affix text={cursorPrefix(form.unit)} />}
-                  value={form.cursor}
-                  onChangeText={(text) => update({ cursor: text.replace(/\D/g, "") })}
-                  maxLength={6}
-                />
-              </Section>
-            ) : null}
+          <Section label="Time limit">
+            <View style={styles.chips}>
+              {TIME_LIMITS.map((limit) => (
+                <ChoiceChip key={limit} selected={form.minutes === limit} onPress={() => update({ minutes: limit })}>
+                  {`${limit} min`}
+                </ChoiceChip>
+              ))}
+            </View>
+          </Section>
 
-            <Section label="Time limit">
-              <View style={styles.chips}>
-                {TIME_LIMITS.map((limit) => (
-                  <Chip
-                    key={limit}
-                    selected={form.minutes === limit}
-                    showSelectedOverlay
-                    onPress={() => update({ minutes: limit })}
+          <Section label="Repeat on">
+            <View style={styles.chips}>
+              {WEEKDAY_CHIPS.map((name, day) => {
+                const on = form.repeatDays.includes(day);
+                return (
+                  <ChoiceChip
+                    key={name}
+                    selected={on}
+                    onPress={() =>
+                      update({
+                        repeatDays: on
+                          ? form.repeatDays.filter((d) => d !== day)
+                          : [...form.repeatDays, day].sort((a, b) => a - b),
+                      })
+                    }
                   >
-                    {`${limit} min`}
-                  </Chip>
-                ))}
-              </View>
-            </Section>
+                    {name}
+                  </ChoiceChip>
+                );
+              })}
+            </View>
+          </Section>
 
-            <Section label="Repeat on">
-              <View style={styles.chips}>
-                {WEEKDAY_CHIPS.map((name, day) => {
-                  const on = form.repeatDays.includes(day);
-                  return (
-                    <Chip
-                      key={name}
-                      selected={on}
-                      showSelectedOverlay
-                      onPress={() =>
-                        update({
-                          repeatDays: on
-                            ? form.repeatDays.filter((d) => d !== day)
-                            : [...form.repeatDays, day].sort((a, b) => a - b),
-                        })
-                      }
-                    >
-                      {name}
-                    </Chip>
-                  );
-                })}
-              </View>
-            </Section>
+          <Section label="Start time, optional">
+            <View style={styles.chips}>
+              <ChoiceChip icon="clock-outline" onPress={() => setTimeOpen(true)}>
+                {form.startTime ?? "None"}
+              </ChoiceChip>
+              {form.startTime ? (
+                <ChoiceChip icon="close" onPress={() => update({ startTime: null })}>
+                  Clear
+                </ChoiceChip>
+              ) : null}
+            </View>
+          </Section>
 
-            <Section label="Start time">
-              <View style={styles.chips}>
-                <Button mode="outlined" icon="clock-outline" onPress={() => setTimeOpen(true)}>
-                  {form.startTime ?? "None"}
-                </Button>
-                {form.startTime ? <Button onPress={() => update({ startTime: null })}>Clear</Button> : null}
-              </View>
-            </Section>
+          <TextInput
+            mode="outlined"
+            label="Details, optional"
+            placeholder="squat, lunge, calf raise"
+            value={form.detail}
+            onChangeText={(detail) => update({ detail })}
+            maxLength={TEXT_MAX}
+          />
 
-            {goal || goalId !== null ? (
-              <View style={styles.toggle}>
-                <Text variant="bodyLarge" style={styles.toggleLabel}>
-                  For this goal
-                </Text>
-                <Switch value={form.forGoal} onValueChange={(forGoal) => update({ forGoal })} />
-              </View>
+          {goal || goalId !== null ? (
+            <View style={styles.toggle}>
+              <Text variant="bodyLarge" style={styles.toggleLabel}>
+                For this goal
+              </Text>
+              <Switch value={form.forGoal} onValueChange={(forGoal) => update({ forGoal })} />
+            </View>
+          ) : null}
+
+          <View style={[styles.preview, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Text variant="labelMedium" style={{ color: theme.colors.onPrimaryContainer, opacity: 0.8 }}>
+              Shows up as
+            </Text>
+            <Text variant="bodyLarge" style={{ color: theme.colors.onPrimaryContainer }}>
+              {`${preview}, ${form.minutes} min`}
+            </Text>
+            {form.detail.trim() ? (
+              <Text variant="bodyMedium" style={{ color: theme.colors.onPrimaryContainer, opacity: 0.8 }}>
+                {form.detail.trim()}
+              </Text>
             ) : null}
-
-            <Card mode="outlined">
-              <Card.Content>
-                <Text variant="labelMedium">Preview</Text>
-                <Text variant="titleMedium">{preview}</Text>
-                {form.detail.trim() ? <Text variant="bodyMedium">{form.detail.trim()}</Text> : null}
-              </Card.Content>
-            </Card>
-            {formError ? <HelperText type="error">{formError}</HelperText> : null}
-          </>
-        ) : null}
-      </ScrollView>
-      <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
-        <Button mode="contained" onPress={onSave} loading={busy} disabled={busy || !loaded}>
-          Save
-        </Button>
-      </View>
+          </View>
+          {formError ? <HelperText type="error">{formError}</HelperText> : null}
+        </>
+      ) : null}
 
       <TimePickerModal
         visible={timeOpen}
@@ -329,26 +326,24 @@ export function TaskFormScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-    </View>
+    </Screen>
   );
 }
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
     <View style={styles.section}>
-      <Text variant="labelLarge">{label}</Text>
+      <Label>{label}</Label>
       {children}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  content: { padding: 16, gap: 16 },
   section: { gap: 8 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" },
   cursor: { width: 140 },
   toggle: { flexDirection: "row", alignItems: "center" },
   toggleLabel: { flex: 1 },
-  footer: { padding: 16 },
+  preview: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, gap: 2 },
 });

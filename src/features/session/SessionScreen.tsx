@@ -5,7 +5,9 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, BackHandler, StyleSheet, View } from "react-native";
 import { Button, Text } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Action } from "@/components/ui";
 import { useDb } from "@/db/DatabaseProvider";
 import * as planItems from "@/db/repos/planItems";
 import * as sessions from "@/db/repos/sessions";
@@ -52,6 +54,7 @@ function focusStatusLine(now: number): { kind: "on" | "off" } | null {
 export function SessionScreen() {
   const db = useDb();
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [session, setSession] = useState<Session | null>(null);
   const [item, setItem] = useState<planItems.DayItem | null>(null);
   const [now, setNow] = useState(nowSeconds());
@@ -136,42 +139,49 @@ export function SessionScreen() {
   const status = focusStatusLine(now);
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.root, { backgroundColor: theme.colors.background, paddingBottom: 16 + insets.bottom }]}>
       {focused ? <StatusBar hidden /> : null}
       {session && item && left !== null ? (
         <>
-          <View style={styles.top}>
-            <Text variant="titleSmall">{item.title}</Text>
-            <Text variant="headlineSmall" style={styles.center}>
+          <View style={styles.center}>
+            <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
+              {item.title}
+            </Text>
+            <Text variant="headlineMedium" style={styles.target}>
               {targetText(item.unit, item.cursor, remainingTarget(item))}
             </Text>
             {item.detail ? (
-              <Text variant="bodyMedium" style={styles.center}>
+              <Text variant="bodyMedium" style={[styles.centerText, { color: theme.colors.onSurfaceVariant }]}>
                 {item.detail}
               </Text>
             ) : null}
-          </View>
-          <View style={styles.middle}>
-            <Text variant="displayLarge" style={styles.timer} accessibilityLabel={`${Math.ceil(left / 60)} minutes left`}>
+            <Text style={[styles.timer, { color: theme.colors.onSurface }]} accessibilityLabel={`${Math.ceil(left / 60)} minutes left`}>
               {formatClock(left)}
             </Text>
-            <Text variant="bodyLarge">{`Left today, limit ${item.limit_minutes} min`}</Text>
-            {session.state === "paused" ? <Text variant="bodyMedium">Paused during a call</Text> : null}
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+              {`Left today, limit ${item.limit_minutes} min`}
+            </Text>
+            {session.state === "paused" ? (
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                Paused during a call
+              </Text>
+            ) : null}
           </View>
-          <View style={styles.bottom}>
-            {status?.kind === "on" ? (
-              <Text variant="bodyMedium" style={styles.center}>
+          {status?.kind === "on" ? (
+            <View style={styles.status}>
+              <View style={[styles.dot, { backgroundColor: theme.colors.primary }]} />
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
                 Do Not Disturb on, calls allowed
               </Text>
-            ) : status?.kind === "off" ? (
-              <Button mode="text" compact onPress={() => router.push("/settings")}>
-                Blocking is off, permissions missing
-              </Button>
-            ) : null}
-            <Button mode="contained" onPress={onStop} loading={stopping} disabled={stopping} style={styles.stop}>
-              Stop
+            </View>
+          ) : status?.kind === "off" ? (
+            <Button mode="text" compact onPress={() => router.push("/settings")}>
+              Blocking is off, permissions missing
             </Button>
-          </View>
+          ) : null}
+          <Action kind="outlined" onPress={onStop} loading={stopping}>
+            Stop
+          </Action>
         </>
       ) : null}
     </View>
@@ -179,11 +189,11 @@ export function SessionScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, padding: 24 },
-  top: { alignItems: "center", gap: 8, paddingTop: 32 },
-  center: { textAlign: "center" },
-  middle: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
-  timer: { fontVariant: ["tabular-nums"] },
-  bottom: { gap: 12, paddingBottom: 16 },
-  stop: { alignSelf: "stretch" },
+  root: { flex: 1, paddingHorizontal: 24, paddingTop: 24 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10 },
+  centerText: { textAlign: "center" },
+  target: { fontWeight: "500", textAlign: "center" },
+  timer: { fontSize: 72, letterSpacing: -2, fontVariant: ["tabular-nums"], marginVertical: 8 },
+  status: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 12 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
 });

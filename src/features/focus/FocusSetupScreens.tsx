@@ -1,19 +1,15 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
-import { List } from "react-native-paper";
 
+import { Screen } from "@/components/Screen";
 import { ScreenBar } from "@/components/ScreenBar";
+import { Row } from "@/components/ui";
 import { useDb } from "@/db/DatabaseProvider";
 import { StepScreen } from "@/features/onboarding/StepScreen";
 import { setStep, stepRoute, type OnboardingStep } from "@/features/onboarding/steps";
 
 import { AllowedAppsList } from "./AllowedAppsList";
 import { PermissionsList } from "./PermissionsList";
-
-const PERMISSIONS_INTRO =
-  "Blocking needs a few system permissions. You can skip them; sessions then run as a timer only.";
-const APPS_INTRO = "Choose the apps that stay open during a session. Phone is always allowed.";
 
 function useAdvance(next: OnboardingStep) {
   const db = useDb();
@@ -30,7 +26,13 @@ function useAdvance(next: OnboardingStep) {
 export function OnboardingPermissionsScreen() {
   const { busy, advance } = useAdvance("apps");
   return (
-    <StepScreen title="Permissions" intro={PERMISSIONS_INTRO} actionLabel="Continue" onAction={advance} busy={busy}>
+    <StepScreen
+      title="Protect your sessions"
+      subtitle="Set once, change any time"
+      actionLabel="Continue"
+      onAction={advance}
+      busy={busy}
+    >
       <PermissionsList />
     </StepScreen>
   );
@@ -40,7 +42,13 @@ export function OnboardingPermissionsScreen() {
 export function OnboardingAppsScreen() {
   const { busy, advance } = useAdvance("done");
   return (
-    <StepScreen title="Allowed apps" intro={APPS_INTRO} actionLabel="Continue" onAction={advance} busy={busy}>
+    <StepScreen
+      title="Allowed in sessions"
+      subtitle="Everything else is blocked"
+      actionLabel="Save"
+      onAction={advance}
+      busy={busy}
+    >
       <AllowedAppsList />
     </StepScreen>
   );
@@ -49,47 +57,33 @@ export function OnboardingAppsScreen() {
 /** Session settings, from the Today overflow menu and the Session screen's "Blocking is off" line. */
 export function SessionSettingsScreen() {
   return (
-    <View style={styles.root}>
-      <ScreenBar title="Session settings" />
-      <List.Item
+    <Screen bar={<ScreenBar title="Session settings" />}>
+      <Row
         title="Permissions"
         description="Do Not Disturb, usage access, overlay, battery"
-        left={(props) => <List.Icon {...props} icon="shield-check-outline" />}
         onPress={() => router.push("/settings/permissions")}
       />
-      <List.Item
+      <Row
         title="Allowed apps"
         description="Apps that stay open during a session"
-        left={(props) => <List.Icon {...props} icon="apps" />}
         onPress={() => router.push("/settings/apps")}
       />
-    </View>
+    </Screen>
   );
 }
 
 export function SettingsPermissionsScreen() {
   return (
-    <View style={styles.root}>
-      <ScreenBar title="Permissions" />
-      <ScrollView contentContainerStyle={styles.content}>
-        <PermissionsList />
-      </ScrollView>
-    </View>
+    <Screen bar={<ScreenBar title="Protect your sessions" subtitle="Set once, change any time" />}>
+      <PermissionsList />
+    </Screen>
   );
 }
 
 export function SettingsAppsScreen() {
   return (
-    <View style={styles.root}>
-      <ScreenBar title="Allowed apps" />
-      <ScrollView contentContainerStyle={styles.content}>
-        <AllowedAppsList />
-      </ScrollView>
-    </View>
+    <Screen bar={<ScreenBar title="Allowed in sessions" subtitle="Everything else is blocked" />}>
+      <AllowedAppsList />
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  content: { paddingVertical: 8 },
-});

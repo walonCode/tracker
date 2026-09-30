@@ -1,50 +1,51 @@
 import { useEffect, useState } from "react";
-import { AppState, View } from "react-native";
-import { List, Text } from "react-native-paper";
+import { AppState, StyleSheet, View } from "react-native";
+import { Button, Icon, Text } from "react-native-paper";
 
+import { Hint, Row } from "@/components/ui";
 import { useAppTheme } from "@/theme";
 
 import * as focus from "./focusMode";
 
-interface Row {
+interface Permission {
   title: string;
   description: string;
   granted: () => boolean;
   open: () => void;
 }
 
-const ROWS: Row[] = [
+const PERMISSIONS: Permission[] = [
   {
     title: "Do Not Disturb access",
-    description: "Silence notifications during a session. Calls still ring.",
+    description: "Silences notifications. Calls still ring.",
     granted: focus.hasDndAccess,
     open: focus.openDndSettings,
   },
   {
     title: "Usage access",
-    description: "See which app is open, to block the ones not allowed.",
+    description: "Sees which app is open during a session.",
     granted: focus.hasUsageAccess,
     open: focus.openUsageSettings,
   },
   {
     title: "Display over other apps",
-    description: "Bring up the block screen over a blocked app.",
+    description: "Puts the session screen on top of blocked apps.",
     granted: focus.hasOverlayPermission,
     open: focus.openOverlaySettings,
   },
   {
     title: "Keep running during sessions",
-    description: "Stop battery optimization from ending a session early.",
+    description: "Stops battery saving from ending a session early.",
     granted: focus.isIgnoringBatteryOptimizations,
     open: focus.requestIgnoreBatteryOptimizations,
   },
 ];
 
 function readStatuses(): boolean[] {
-  return ROWS.map((row) => row.granted());
+  return PERMISSIONS.map((p) => p.granted());
 }
 
-/** Screen 2's rows. Each opens its system settings screen; statuses refresh on return. */
+/** Screen 2's rows: each opens its system settings screen; statuses refresh on return. */
 export function PermissionsList() {
   const theme = useAppTheme();
   const [statuses, setStatuses] = useState(readStatuses);
@@ -57,28 +58,41 @@ export function PermissionsList() {
   }, []);
 
   if (!focus.focusAvailable) {
-    return <Text variant="bodyLarge">Focus mode is not available in this build. Sessions run as a timer.</Text>;
+    return <Hint>Focus mode is not available in this build. Sessions run as a timer.</Hint>;
   }
 
   return (
     <View>
-      {ROWS.map((row, i) => (
-        <List.Item
-          key={row.title}
-          title={row.title}
-          description={row.description}
-          descriptionNumberOfLines={3}
-          onPress={row.open}
-          right={(props) => (
-            <List.Icon
-              {...props}
-              icon={statuses[i] ? "check-circle" : "chevron-right"}
-              color={statuses[i] ? theme.colors.primary : props.color}
-            />
-          )}
-          accessibilityLabel={`${row.title}, ${statuses[i] ? "allowed" : "not allowed"}`}
+      {PERMISSIONS.map((permission, i) => (
+        <Row
+          key={permission.title}
+          title={permission.title}
+          description={permission.description}
+          onPress={permission.open}
+          accessibilityLabel={`${permission.title}, ${statuses[i] ? "allowed" : "not allowed"}`}
+          right={
+            statuses[i] ? (
+              <View style={styles.allowed}>
+                <Icon source="check" size={16} color={theme.colors.primary} />
+                <Text variant="labelLarge" style={{ color: theme.colors.primary }}>
+                  Allowed
+                </Text>
+              </View>
+            ) : (
+              <Button mode="contained-tonal" compact onPress={permission.open} style={styles.allow}>
+                Allow
+              </Button>
+            )
+          }
         />
       ))}
+      <Hint style={styles.hint}>Everything stays on your phone.</Hint>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  allowed: { flexDirection: "row", alignItems: "center", gap: 4 },
+  allow: { borderRadius: 16 },
+  hint: { marginTop: 16 },
+});

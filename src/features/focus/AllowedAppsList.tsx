@@ -1,15 +1,29 @@
 import { useEffect, useState } from "react";
-import { View } from "react-native";
-import { ActivityIndicator, List, Switch, Text } from "react-native-paper";
+import { StyleSheet, View } from "react-native";
+import { ActivityIndicator, Switch, Text } from "react-native-paper";
 
+import { Hint, Row } from "@/components/ui";
 import { useDb } from "@/db/DatabaseProvider";
 import * as allowedApps from "@/db/repos/allowedApps";
+import { useAppTheme } from "@/theme";
 
 import * as focus from "./focusMode";
 
 interface AppRow {
   packageName: string;
   label: string;
+}
+
+/** The tonal letter square in front of each app. */
+function AppInitial({ label }: { label: string }) {
+  const theme = useAppTheme();
+  return (
+    <View style={[styles.initial, { backgroundColor: theme.colors.primaryContainer }]}>
+      <Text variant="titleSmall" style={{ color: theme.colors.onPrimaryContainer }}>
+        {label.trim().charAt(0).toUpperCase() || "?"}
+      </Text>
+    </View>
+  );
 }
 
 /**
@@ -19,6 +33,7 @@ interface AppRow {
  */
 export function AllowedAppsList() {
   const db = useDb();
+  const theme = useAppTheme();
   const [apps, setApps] = useState<AppRow[] | null>(null);
   const [allowed, setAllowed] = useState<Set<string>>(new Set());
 
@@ -41,31 +56,43 @@ export function AllowedAppsList() {
   }
 
   if (!focus.focusAvailable) {
-    return <Text variant="bodyLarge">Focus mode is not available in this build. No apps are blocked.</Text>;
+    return <Hint>Focus mode is not available in this build. No apps are blocked.</Hint>;
   }
 
   return (
     <View>
-      <List.Item
+      <Row
         title="Phone"
-        description="Always allowed"
-        left={(props) => <List.Icon {...props} icon="phone" />}
-        right={() => <Switch value disabled accessibilityLabel="Phone, always allowed" />}
+        description="Always allowed. Calls come through."
+        left={<AppInitial label="Phone" />}
+        right={
+          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+            Always
+          </Text>
+        }
       />
-      {apps === null ? <ActivityIndicator style={{ marginTop: 16 }} /> : null}
+      {apps === null ? <ActivityIndicator style={styles.loading} /> : null}
       {apps?.map((app) => (
-        <List.Item
+        <Row
           key={app.packageName}
           title={app.label}
-          right={() => (
+          left={<AppInitial label={app.label} />}
+          onPress={() => toggle(app, !allowed.has(app.packageName))}
+          accessibilityLabel={`${app.label}, ${allowed.has(app.packageName) ? "allowed" : "blocked"}`}
+          right={
             <Switch
               value={allowed.has(app.packageName)}
               onValueChange={(value) => toggle(app, value)}
               accessibilityLabel={`Allow ${app.label}`}
             />
-          )}
+          }
         />
       ))}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  initial: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  loading: { marginTop: 16 },
+});

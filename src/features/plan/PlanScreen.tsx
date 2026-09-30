@@ -2,14 +2,17 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import DraggableFlatList, { ScaleDecorator, type RenderItemParams } from "react-native-draggable-flatlist";
-import { Button, Divider, HelperText, Icon, List, Text, TouchableRipple } from "react-native-paper";
+import { Button, HelperText, Icon, Text } from "react-native-paper";
 
+import { Screen } from "@/components/Screen";
 import { ScreenBar } from "@/components/ScreenBar";
+import { Action, Hint, Label, Row } from "@/components/ui";
 import { useDb } from "@/db/DatabaseProvider";
 import * as planItems from "@/db/repos/planItems";
 import * as tasks from "@/db/repos/tasks";
 import type { PlanItem } from "@/db/types";
 import { addDays, formatDate, formatMinutes, today } from "@/domain/dates";
+import { repeatText } from "@/domain/labels";
 import {
   addTask,
   buildDraft,
@@ -22,6 +25,7 @@ import {
 } from "@/domain/planBuilder";
 import { refreshOutputs } from "@/features/refresh";
 import { takeJustCreated } from "@/features/tasks/justCreated";
+import { useAppTheme } from "@/theme";
 
 import { AddTaskSheet } from "./AddTaskSheet";
 
@@ -35,6 +39,7 @@ function tasksText(count: number): string {
  */
 export function PlanScreen() {
   const db = useDb();
+  const theme = useAppTheme();
   const todayDate = today();
   const date = useLocalSearchParams<{ date?: string }>().date ?? addDays(todayDate, 1);
   const isToday = date === todayDate;
@@ -97,103 +102,110 @@ export function PlanScreen() {
   }
 
   const title = isToday ? "Plan today" : "Plan tomorrow";
-  if (!draft) return <ScreenBar title={title} />;
+  const subtitle = draft
+    ? `${formatDate(date, todayDate)}${draft.fromRepeats ? ", filled from your repeats" : ""}`
+    : formatDate(date, todayDate);
+  const bar = <ScreenBar title={title} subtitle={subtitle} />;
+
+  if (!draft) return <Screen bar={bar} />;
 
   if (locked) {
     return (
-      <View style={styles.root}>
-        <ScreenBar title={title} />
-        <Text variant="bodyLarge" style={styles.pad}>
-          Today already has a plan. Items dated today change only through sessions or Skip today.
-        </Text>
-      </View>
+      <Screen bar={bar}>
+        <Hint>Today already has a plan. Items dated today change only through sessions or Skip today.</Hint>
+      </Screen>
     );
   }
 
+  function detailFor(item: DraftItem): string {
+    const task = allTasks.find((t) => t.id === item.taskId);
+    const repeat = task ? repeatText(task.repeat_days) : null;
+    return repeat ? `${item.limitMinutes} min, ${repeat}` : `${item.limitMinutes} min`;
+  }
+
   const header = (
-    <View>
-      <Text variant="titleMedium" style={styles.pad}>
-        {formatDate(date, todayDate)}
-        {draft.fromRepeats ? ", filled from your repeats" : ""}
-      </Text>
+    <View style={styles.pad}>
       {draft.unfinished.length > 0 ? (
-        <View>
-          <List.Subheader>Unfinished today</List.Subheader>
+        <View style={styles.section}>
+          <Label>Unfinished today</Label>
           {draft.unfinished.map((item) => {
             const task = taskFor(item);
             return (
-              <View key={item.id} style={styles.unfinishedRow}>
-                <Text variant="bodyLarge" style={styles.grow}>
-                  {item.label_snapshot}
-                </Text>
-                <Button
-                  compact
-                  disabled={!task}
-                  onPress={() => task && setDraft(keepUnfinished(draft, item, task))}
-                >
-                  Keep
-                </Button>
-                <Button compact onPress={() => setDraft(dropUnfinished(draft, item))}>
-                  Drop
-                </Button>
-              </View>
+              <Row
+                key={item.id}
+                title={item.label_snapshot}
+                right={
+                  <View style={styles.pair}>
+                    <Button
+                      compact
+                      mode="contained-tonal"
+                      disabled={!task}
+                      onPress={() => task && setDraft(keepUnfinished(draft, item, task))}
+                    >
+                      Keep
+                    </Button>
+                    <Button compact onPress={() => setDraft(dropUnfinished(draft, item))}>
+                      Drop
+                    </Button>
+                  </View>
+                }
+              />
             );
           })}
-          <Divider />
         </View>
       ) : null}
-      <List.Subheader>{isToday ? "Today" : "Tomorrow"}</List.Subheader>
-      {draft.items.length === 0 ? (
-        <Text variant="bodyMedium" style={styles.pad}>
-          Nothing planned yet.
-        </Text>
-      ) : null}
+      {draft.unfinished.length > 0 ? <Label>{isToday ? "Today" : "Tomorrow"}</Label> : null}
+      {draft.items.length === 0 ? <Hint style={styles.emptyHint}>Nothing planned yet. Add a saved task or create one.</Hint> : null}
     </View>
   );
 
   const total = totalMinutes(draft.items);
-  const footer = (
-    <View style={styles.footer}>
-      <Button mode="outlined" icon="plus" onPress={() => setSheetOpen(true)}>
+  const listFooter = (
+    <View style={styles.pad}>
+      <Button mode="text" icon="plus" onPress={() => setSheetOpen(true)} style={styles.addButton} contentStyle={styles.addContent}>
         Add saved task
       </Button>
-      <Text variant="bodyLarge">
+      <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
         {tasksText(draft.items.length)}
         {draft.items.length > 0 ? `, ${formatMinutes(total)}` : ""}
       </Text>
       {error ? <HelperText type="error">{error}</HelperText> : null}
-      <Button mode="contained" onPress={onSave} loading={saving} disabled={saving}>
-        Save plan
-      </Button>
     </View>
   );
 
   function renderItem({ item, drag, isActive }: RenderItemParams<DraftItem>) {
     return (
       <ScaleDecorator>
-        <TouchableRipple onLongPress={drag} disabled={isActive} accessibilityHint="Long-press to reorder">
-          <View style={styles.row}>
-            <Icon source="drag" size={20} />
-            <Text variant="bodyLarge" style={styles.grow}>
-              {item.label}
-            </Text>
-            <Text variant="bodyMedium">{`${item.limitMinutes} min`}</Text>
-          </View>
-        </TouchableRipple>
+        <View style={[styles.pad, isActive && { backgroundColor: theme.colors.elevation.level2 }]}>
+          <Row
+            title={item.label}
+            description={detailFor(item)}
+            onLongPress={drag}
+            accessibilityHint="Long-press to reorder"
+            right={<Icon source="drag-horizontal-variant" size={22} color={theme.colors.onSurfaceVariant} />}
+          />
+        </View>
       </ScaleDecorator>
     );
   }
 
   return (
-    <View style={styles.root}>
-      <ScreenBar title={title} />
+    <Screen
+      bar={bar}
+      scroll={false}
+      footer={
+        <Action onPress={onSave} loading={saving}>
+          Save plan
+        </Action>
+      }
+    >
       <DraggableFlatList
         data={draft.items}
         keyExtractor={(item) => item.key}
         renderItem={renderItem}
         onDragEnd={({ data }) => setDraft({ ...draft, items: data })}
         ListHeaderComponent={header}
-        ListFooterComponent={footer}
+        ListFooterComponent={listFooter}
         containerStyle={styles.grow}
       />
       <AddTaskSheet
@@ -204,15 +216,16 @@ export function PlanScreen() {
         onCreate={(name) => router.push({ pathname: "/task", params: { title: name, from: "plan" } })}
         onDismiss={() => setSheetOpen(false)}
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
   grow: { flex: 1 },
-  pad: { paddingHorizontal: 16, paddingVertical: 8 },
-  unfinishedRow: { flexDirection: "row", alignItems: "center", paddingLeft: 16, paddingRight: 8, gap: 4 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
-  footer: { padding: 16, gap: 16 },
+  pad: { paddingHorizontal: 20 },
+  section: { marginBottom: 16 },
+  pair: { flexDirection: "row", gap: 4 },
+  emptyHint: { paddingVertical: 12 },
+  addButton: { alignSelf: "flex-start", marginLeft: -12, marginTop: 4 },
+  addContent: { height: 48 },
 });
