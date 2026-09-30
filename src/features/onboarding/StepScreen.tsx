@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { Button, Text } from "react-native-paper";
 
@@ -16,6 +17,7 @@ interface StepScreenProps {
 
 /** Shared frame for the first-run screens: bar, content, one filled action. */
 export function StepScreen({ title, back = false, intro, children, actionLabel, onAction, busy }: StepScreenProps) {
+  const insets = useSafeAreaInsets();
   return (
     <View style={styles.root}>
       <ScreenBar title={title} back={back} />
@@ -23,7 +25,7 @@ export function StepScreen({ title, back = false, intro, children, actionLabel, 
         {intro ? <Text variant="bodyLarge">{intro}</Text> : null}
         {children}
       </ScrollView>
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
         <Button mode="contained" onPress={onAction} loading={busy} disabled={busy}>
           {actionLabel}
         </Button>

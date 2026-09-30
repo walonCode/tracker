@@ -1,5 +1,7 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { StyleSheet } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
 
 import { DatabaseProvider } from "@/db/DatabaseProvider";
@@ -22,11 +24,17 @@ export default function RootLayout() {
   const theme = useAppTheme();
 
   return (
-    <PaperProvider theme={theme}>
-      <StatusBar style={theme.dark ? "light" : "dark"} />
-      <DatabaseProvider>
-        <Navigator theme={theme} />
-      </DatabaseProvider>
-    </PaperProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <PaperProvider theme={theme}>
+        <StatusBar style={theme.dark ? "light" : "dark"} />
+        <DatabaseProvider>
+          <Navigator theme={theme} />
+        </DatabaseProvider>
+      </PaperProvider>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+});

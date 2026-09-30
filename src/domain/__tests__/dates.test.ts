@@ -4,6 +4,7 @@ import {
   daysBetween,
   formatDate,
   formatDuration,
+  formatMinutes,
   localDate,
   localTimeToSeconds,
   mondayOf,
@@ -113,5 +114,13 @@ describe("formatDate", () => {
     expect(formatDate("2026-09-28", "2026-01-01")).toBe("Mon 28 Sep");
     expect(formatDate("2027-01-04", "2026-12-30")).toBe("Mon 4 Jan 2027");
     expect(formatDate("2026-10-04")).toBe("Sun 4 Oct 2026");
+  });
+});
+
+describe("formatMinutes", () => {
+  it("formats planned totals", () => {
+    expect(formatMinutes(45)).toBe("45 min");
+    expect(formatMinutes(60)).toBe("1 h");
+    expect(formatMinutes(95)).toBe("1 h 35 min");
   });
 });
