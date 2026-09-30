@@ -1,26 +1,31 @@
 import { router } from "expo-router";
-import { StyleSheet } from "react-native";
-import { Card, Text } from "react-native-paper";
+import { Pressable, StyleSheet } from "react-native";
+import { Text } from "react-native-paper";
 
 import type { Goal } from "@/db/types";
-import { formatDate, today } from "@/domain/dates";
+import { formatDayMonth, today } from "@/domain/dates";
+import { useAppTheme } from "@/theme";
 
+/** The compact goal line at the top of Today; tapping it opens the Goal screen. */
 export function GoalCard({ goal }: { goal: Goal }) {
-  const due = formatDate(goal.due_date, today());
+  const theme = useAppTheme();
+  const due = formatDayMonth(goal.due_date, today());
   return (
-    <Card
-      mode="outlined"
+    <Pressable
       onPress={() => router.push("/goal")}
+      android_ripple={{ color: theme.colors.surfaceVariant }}
+      accessibilityRole="button"
       accessibilityLabel={`Goal, due ${due}. ${goal.title}`}
+      style={[styles.card, { borderColor: theme.colors.outlineVariant }]}
     >
-      <Card.Content style={styles.content}>
-        <Text variant="labelMedium">Goal, due {due}</Text>
-        <Text variant="titleMedium">{goal.title}</Text>
-      </Card.Content>
-    </Card>
+      <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+        {`Goal, due ${due}`}
+      </Text>
+      <Text variant="bodyLarge">{goal.title}</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 4 },
+  card: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, gap: 2 },
 });

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { FlatList, ScrollView, StyleSheet, View } from "react-native";
-import { Chip, Divider, Text } from "react-native-paper";
+import { Divider, Text } from "react-native-paper";
 
+import { Screen } from "@/components/Screen";
 import { ScreenBar } from "@/components/ScreenBar";
+import { ChoiceChip } from "@/components/ui";
 import { useDb } from "@/db/DatabaseProvider";
 import * as log from "@/db/repos/log";
 import { daysBetween, formatDate, formatMinutes, localDate, mondayOf, today, type LocalDate } from "@/domain/dates";
@@ -10,6 +12,7 @@ import { buildGrid, gridRange, shadeLevel } from "@/domain/heatmap";
 import { dayItemText, entryLabel } from "@/domain/logText";
 import type { TaskWithRepeats } from "@/domain/planBuilder";
 import { runCounter } from "@/domain/runCounter";
+import { useAppTheme } from "@/theme";
 
 import { Heatmap, Legend, type CellValue } from "./Heatmap";
 
@@ -19,17 +22,34 @@ const EMPTY_TEXT = "Your log fills in as you finish sessions.";
 
 type Row = { kind: "entry"; entry: log.Entry } | { kind: "item"; item: log.DayDetailItem };
 
-function EndedEarly() {
+/** One log entry: a small context line over the main line, with an optional "Ended early" tag. */
+function LogRow({ small, main, early }: { small: string | null; main: string; early: boolean }) {
+  const theme = useAppTheme();
   return (
-    <Text variant="labelSmall" style={styles.tag}>
-      Ended early
-    </Text>
+    <View style={[styles.row, { borderBottomColor: theme.colors.outlineVariant }]}>
+      <View style={styles.line}>
+        <View style={styles.grow}>
+          {small ? (
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              {small}
+            </Text>
+          ) : null}
+          <Text variant="bodyLarge">{main}</Text>
+        </View>
+        {early ? (
+          <Text variant="labelSmall" style={[styles.tag, { borderColor: theme.colors.outline, color: theme.colors.onSurfaceVariant }]}>
+            Ended early
+          </Text>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
 /** Screens 11 to 13: the heatmap, one summary line, and the entries or a day's detail. */
 export function LogScreen() {
   const db = useDb();
+  const theme = useAppTheme();
   const todayDate = today();
   const grid = useMemo(() => buildGrid(todayDate), [todayDate]);
   const range = gridRange(grid);
@@ -119,14 +139,18 @@ export function LogScreen() {
   }, [taskId]);
 
   const loadMore = useCallback(() => {
-    if (entriesDone || selected !== null || loadingMore.current) return;
+    // A short list fires onEndReached on mount; the first page comes from the effect above.
+    if (entriesDone || selected !== null || loadingMore.current || entries.length === 0) return;
     loadingMore.current = true;
     const filter = taskId;
     log
       .entries(db, PAGE, entries.length, filter ?? undefined)
       .then((page) => {
         if (filterRef.current !== filter) return;
-        setEntries((current) => [...current, ...page]);
+        setEntries((current) => {
+          const seen = new Set(current.map((e) => e.id));
+          return [...current, ...page.filter((e) => !seen.has(e.id))];
+        });
         if (page.length < PAGE) setEntriesDone(true);
       })
       .finally(() => {
@@ -149,17 +173,29 @@ export function LogScreen() {
 
   let summary: ReactNode;
   if (selected !== null) {
-    summary = <Text variant="titleMedium">{`${formatDate(selected, todayDate)}, ${formatMinutes(minutes.get(selected) ?? 0)}`}</Text>;
+    summary = (
+      <Text variant="bodyLarge">
+        <Text style={styles.bold}>{formatDate(selected, todayDate)}</Text>
+        {`, ${formatMinutes(minutes.get(selected) ?? 0)}`}
+      </Text>
+    );
   } else if (task) {
     summary =
       run !== null && !empty ? (
         <View>
-          <Text variant="titleLarge">{run === 1 ? "1 day" : `${run} days`}</Text>
-          <Text variant="bodyMedium">Current run of limit hit</Text>
+          <Text style={styles.big}>{run === 1 ? "1 day" : `${run} days`}</Text>
+          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+            Current run of limit hit
+          </Text>
         </View>
       ) : null;
   } else {
-    summary = <Text variant="titleMedium">{`This week: ${formatMinutes(weekMinutes)}`}</Text>;
+    summary = (
+      <Text variant="bodyLarge">
+        {"This week: "}
+        <Text style={styles.bold}>{formatMinutes(weekMinutes)}</Text>
+      </Text>
+    );
   }
 
   const rows: Row[] =
@@ -170,13 +206,13 @@ export function LogScreen() {
   const header = (
     <View style={styles.header}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        <Chip selected={taskId === null} showSelectedOverlay onPress={() => setTaskId(null)}>
+        <ChoiceChip selected={taskId === null} onPress={() => setTaskId(null)}>
           All
-        </Chip>
+        </ChoiceChip>
         {tasks.map((t) => (
-          <Chip key={t.id} selected={taskId === t.id} showSelectedOverlay onPress={() => setTaskId(t.id)}>
+          <ChoiceChip key={t.id} selected={taskId === t.id} onPress={() => setTaskId(t.id)}>
             {t.title}
-          </Chip>
+          </ChoiceChip>
         ))}
       </ScrollView>
       <Heatmap grid={grid} today={todayDate} valueFor={valueFor} selected={selected} onSelect={setSelected} />
@@ -189,55 +225,47 @@ export function LogScreen() {
   );
 
   return (
-    <View style={styles.root}>
-      <ScreenBar title="Log" />
+    <Screen bar={<ScreenBar title="Log" />} scroll={false}>
       <FlatList
         data={rows}
         keyExtractor={(row) => (row.kind === "entry" ? `e${row.entry.id}` : `i${row.item.id}`)}
         ListHeaderComponent={header}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
-        ItemSeparatorComponent={Divider}
-        renderItem={({ item: row }) =>
-          row.kind === "entry" ? (
-            <View style={styles.row}>
-              <View style={styles.line}>
-                <Text variant="bodyLarge" style={styles.grow}>
-                  {`${formatDate(row.entry.plan_date, todayDate)}  ${entryLabel(row.entry)}`}
-                </Text>
-                {row.entry.end_reason === "early_exit" ? <EndedEarly /> : null}
-              </View>
-              {row.entry.note ? <Text variant="bodyMedium">{row.entry.note}</Text> : null}
-            </View>
-          ) : (
-            <View style={styles.row}>
-              <View style={styles.line}>
-                <Text variant="bodyLarge" style={styles.grow}>
-                  {dayItemText(row.item)}
-                </Text>
-                {row.item.sessions.some((s) => s.end_reason === "early_exit") ? <EndedEarly /> : null}
-              </View>
-              {row.item.sessions
-                .filter((s) => s.note)
-                .map((s) => (
-                  <Text key={s.id} variant="bodyMedium">
-                    {s.note}
-                  </Text>
-                ))}
-            </View>
-          )
-        }
+        renderItem={({ item: row }) => {
+          if (row.kind === "entry") {
+            const date = formatDate(row.entry.plan_date, todayDate);
+            const label = entryLabel(row.entry);
+            return (
+              <LogRow
+                small={row.entry.note ? `${date}, ${label}` : date}
+                main={row.entry.note ?? label}
+                early={row.entry.end_reason === "early_exit"}
+              />
+            );
+          }
+          const notes = row.item.sessions.filter((s) => s.note).map((s) => s.note!);
+          return (
+            <LogRow
+              small={notes.length > 0 ? dayItemText(row.item) : null}
+              main={notes.length > 0 ? notes.join("\n") : dayItemText(row.item)}
+              early={row.item.sessions.some((s) => s.end_reason === "early_exit")}
+            />
+          );
+        }}
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { gap: 12, paddingTop: 8 },
-  chips: { gap: 8, paddingHorizontal: 16 },
-  pad: { paddingHorizontal: 16, paddingBottom: 12 },
-  row: { paddingHorizontal: 16, paddingVertical: 12, gap: 4 },
+  chips: { gap: 8, paddingHorizontal: 20 },
+  pad: { paddingHorizontal: 20, paddingBottom: 8 },
+  row: { marginHorizontal: 20, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  bold: { fontWeight: "500" },
+  big: { fontSize: 38, fontWeight: "500", letterSpacing: -1 },
   line: { flexDirection: "row", alignItems: "center", gap: 8 },
   grow: { flex: 1 },
   tag: { borderWidth: 1, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, opacity: 0.8 },

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Focus app, full flow (Android)</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f3f7;--surface:#fdfbff;--text:#1b1b1f;--text2:#5f5f66;--line:#d9d8de;--primary:#4a5bd0;--onprimary:#fff;--tonal:#e1e3ff;--ontonal:#1a2270;--scrim:#c9c8ce}
+@media (prefers-color-scheme: dark){:root{--bg:#111114;--surface:#1b1b1f;--text:#e4e2e6;--text2:#a9a8ae;--line:#3a3a40;--primary:#b9c3ff;--onprimary:#0b1461;--tonal:#2f3a8f;--ontonal:#dfe0ff;--scrim:#0a0a0c}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);font-family:Roboto,system-ui,sans-serif;color:var(--text);padding:28px 16px 48px}
+.page{max-width:1240px;margin:0 auto}
+h1{font-size:26px;font-weight:500}
+.lead{font-size:15px;color:var(--text2);margin:6px 0 18px;max-width:760px;line-height:1.5}
+.strip{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
+.strip span{font-size:13px;background:var(--tonal);color:var(--ontonal);border-radius:8px;padding:5px 10px}
+.strip i{font-style:normal;color:var(--text2);font-size:13px}
+h2{font-size:18px;font-weight:500;margin:40px 0 2px}
+.sub2{font-size:14px;color:var(--text2);margin-bottom:16px}
+.wrap{display:flex;flex-wrap:wrap;gap:24px}
+.col{width:270px}
+.phone{position:relative;height:580px;border:2px solid var(--line);border-radius:36px;background:var(--surface);padding:14px 20px 10px;display:flex;flex-direction:column;overflow:hidden}
+.sb{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);height:20px;align-items:center}
+.cap{text-align:center;font-size:13px;color:var(--text2);margin-top:10px}
+.cap b{font-weight:500;color:var(--text)}
+.bar{min-height:54px;margin-top:4px;display:flex;flex-direction:column;justify-content:center}
+.bar .h{font-size:22px}
+.bar .s{font-size:13px;color:var(--text2)}
+.bar.row{flex-direction:row;align-items:center;justify-content:flex-start;gap:16px}
+.bar svg{width:24px;height:24px;stroke:var(--text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.list{flex:1;overflow:hidden}
+.item{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+.item .g{flex:1}
+.item .n{font-size:16px;line-height:1.3}
+.item .d{font-size:13px;color:var(--text2);margin-top:3px;line-height:1.35}
+.item .m{font-size:14px;color:var(--text2)}
+.circle{width:22px;height:22px;border-radius:50%;border:2px solid var(--text2);flex:none}
+.circle.done{background:var(--primary);border-color:var(--primary);color:var(--onprimary);font-size:13px;display:flex;align-items:center;justify-content:center}
+.done-t{color:var(--text2);text-decoration:line-through}
+.next{background:var(--tonal);color:var(--ontonal);border-radius:16px;padding:14px;margin:10px 0 4px}
+.next .l{font-size:12px;opacity:.85}
+.next .t{font-size:22px;font-weight:500;margin:2px 0 6px;line-height:1.25}
+.track{height:6px;border-radius:3px;background:rgba(0,0,0,.15);margin:6px 0 12px;overflow:hidden}
+.fill{height:100%;background:var(--primary)}
+.next .b{height:44px;border-radius:22px;background:var(--primary);color:var(--onprimary);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500}
+.goalline{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:2px}
+.goalline .l{font-size:11px;color:var(--text2)}
+.goalline .t{font-size:14px;line-height:1.3;margin-top:1px}
+.btn{height:48px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500}
+.filled{background:var(--primary);color:var(--onprimary)}
+.tonalb{background:var(--tonal);color:var(--ontonal)}
+.outlined{border:1px solid var(--text2);color:var(--text)}
+.tlink{display:flex;justify-content:space-between;font-size:14px;font-weight:500;color:var(--primary);padding:6px 4px 10px}
+.textb{font-size:14px;font-weight:500;color:var(--primary);padding:12px 0 2px}
+.gb{width:110px;height:5px;border-radius:3px;background:var(--text2);opacity:.5;margin:10px auto 0}
+.field{min-height:48px;border:1px solid var(--text2);border-radius:8px;padding:12px 14px;display:flex;align-items:center;font-size:16px;position:relative;line-height:1.3;margin-top:10px}
+.field .fl{position:absolute;top:-8px;left:10px;background:var(--surface);padding:0 4px;font-size:11px;color:var(--text2)}
+.hint{font-size:13px;color:var(--text2);line-height:1.45;margin-top:14px}
+.lab{font-size:12px;color:var(--text2);margin:14px 0 6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{height:30px;padding:0 12px;border-radius:8px;border:1px solid var(--line);font-size:13px;display:flex;align-items:center;color:var(--text2);white-space:nowrap}
+.chip.on{background:var(--tonal);color:var(--ontonal);border-color:transparent}
+.step{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.step .b{width:36px;height:36px;border-radius:18px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:20px}
+.step .v{font-size:24px;font-weight:500;min-width:26px;text-align:center}
+.tog{display:flex;align-items:center;justify-content:space-between;font-size:15px;margin-top:14px}
+.sw{width:44px;height:26px;border-radius:13px;background:var(--primary);position:relative;flex:none}
+.sw:after{content:"";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:10px;background:var(--onprimary)}
+.sw.off{background:transparent;border:2px solid var(--text2)}
+.sw.off:after{right:auto;left:3px;top:1px;background:var(--text2);width:16px;height:16px;border-radius:8px}
+.prev{background:var(--tonal);color:var(--ontonal);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:15px;line-height:1.35}
+.prev .l{font-size:11px;opacity:.8;margin-bottom:2px}
+.center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:10px}
+.timer{font-size:62px;letter-spacing:-2px;font-variant-numeric:tabular-nums}
+.status{font-size:12px;color:var(--text2);text-align:center;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:4px;background:var(--primary)}
+.x{font-size:22px;margin-left:auto}
+.pill{height:30px;padding:0 14px;border-radius:15px;background:var(--tonal);color:var(--ontonal);font-size:13px;font-weight:500;display:flex;align-items:center}
+.ok{font-size:13px;color:var(--primary);font-weight:500;display:flex;align-items:center;gap:4px}
+.ic{width:36px;height:36px;border-radius:10px;background:var(--tonal);color:var(--ontonal);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;flex:none}
+.scrim{position:absolute;inset:0;background:var(--scrim);opacity:.6}
+.sheet{position:absolute;left:0;right:0;bottom:0;height:450px;background:var(--surface);border-radius:28px 28px 0 0;padding:12px 20px 10px;display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.handle{width:32px;height:4px;border-radius:2px;background:var(--text2);opacity:.5;margin:0 auto 10px}
+.add{width:32px;height:32px;border-radius:16px;background:var(--tonal);color:var(--ontonal);display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;flex:none}
+.muted{color:var(--text2)}
+.fake{flex:1;display:flex;flex-direction:column;gap:10px;padding-top:10px}
+.fake div{background:color-mix(in srgb,var(--text2) 16%,transparent);border-radius:10px}
+.ov{position:absolute;inset:0;background:color-mix(in srgb,var(--surface) 88%,transparent);display:flex;align-items:center;justify-content:center;padding:22px}
+.ovc{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:22px 18px;text-align:center}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(7,auto);grid-auto-flow:column;gap:3px}
+.c{aspect-ratio:1;border-radius:3px;background:color-mix(in srgb,var(--text2) 18%,transparent)}
+.c.l1{background:color-mix(in srgb,var(--primary) 28%,transparent)}
+.c.l2{background:color-mix(in srgb,var(--primary) 52%,transparent)}
+.c.l3{background:color-mix(in srgb,var(--primary) 76%,transparent)}
+.c.l4{background:var(--primary)}
+.c.f{background:transparent;border:1px dashed var(--line)}
+.c.sel{outline:2px solid var(--text);outline-offset:1px}
+.legend{display:flex;align-items:center;justify-content:flex-end;gap:4px;font-size:11px;color:var(--text2);margin-top:8px}
+.legend .c{width:11px;height:11px;aspect-ratio:auto}
+.chips2{display:flex;gap:6px;margin:0 0 12px;overflow:hidden}
+.sum{font-size:14px;margin:12px 0 2px}
+.sum b{font-weight:500}
+.big{font-size:38px;font-weight:500;letter-spacing:-1px;margin-top:12px}
+.sm{font-size:13px;color:var(--text2)}
+.row{padding:9px 0;border-bottom:1px solid var(--line)}
+.row .d{font-size:12px;color:var(--text2)}
+.row .t{font-size:14px;margin-top:2px}
+.note{font-size:12px;color:var(--text2);text-align:center;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Focus app, full flow (Android)</h1>
+<p class="lead">Every screen in one place. Setup happens once, planning happens in the evening, the day runs from a single list, and the log is for review. Data on the screens is sample data.</p>
+<div class="strip"><span>Set goal</span><i>&rarr;</i><span>Permissions</span><i>&rarr;</i><span>Allowed apps</span><i>&rarr;</i><span>Plan tomorrow</span><i>&rarr;</i><span>Today</span><i>&rarr;</i><span>Session</span><i>&rarr;</i><span>Done</span><i>&rarr;</i><span>Log</span></div>
+
+<h2>A. First run, once</h2>
+<div class="sub2">Set the one goal, grant three permissions, choose which apps stay open during sessions.</div>
+<div class="wrap">
+
+<div class="col"><div class="phone">
+<div class="sb"><span>09:00</span><span>wifi &nbsp;battery</span></div>
+<div class="bar"><div class="h">Your goal</div><div class="s">One goal at a time</div></div>
+<div class="list">
+<div class="field"><span class="fl">Goal</span>Finish chapter 3 draft and send it to my supervisor</div>
+<div class="field"><span class="fl">Due</span>12 Oct 2026</div>
+<div class="hint">Pick something you can finish. To set a new goal later, you finish or drop this one first.</div>
+</div>
+<div class="btn filled">Continue</div>
+<div class="gb"></div>
+</div><div class="cap"><b>1.</b> Set goal</div></div>
+
+<div class="col"><div class="phone">
+<div class="sb"><span>09:01</span><span>wifi &nbsp;battery</span></div>
+<div class="bar"><div class="h">Protect your sessions</div><div class="s">Three permissions, set once</div></div>
+<div class="list">
+<div class="item"><div class="g"><div class="n">Do Not Disturb access</div><div class="d">Silences notifications. Calls still ring.</div></div><span class="ok">&#10003; Allowed</span></div>
+<div class="item"><div class="g"><div class="n">Usage access</div><div class="d">Sees which app is open during a session.</div></div><span class="ok">&#10003; Allowed</span></div>
+<div class="item"><div class="g"><div class="n">Display over other apps</div><div class="d">Puts the session screen on top of blocked apps.</div></div><span class="pill">Allow</span></div>
+<div class="hint">Everything stays on your phone.</div>
+</div>
+<div class="btn filled">Continue</div>
+<div class="gb"></div>
+</div><div class="cap"><b>2.</b> Permissions</div></div>
+
+<div class="col"><div class="phone">
+<div class="sb"><span>09:02</span><span>wifi &nbsp;battery</span></div>
+<div class="bar"><div class="h">Allowed in sessions</div><div class="s">Everything else is blocked</div></div>
+<div class="list">
+<div class="item"><span class="ic">P</span><div class="g"><div class="n">Phone</div><div class="d">Always allowed. Calls come through.</div></div><span class="sm">Always</span></div>
+<div class="item"><span class="ic">C</span><div class="g"><div class="n">Contacts</div></div><div class="sw"></div></div>
+<div class="item"><span class="ic">M</span><div class="g"><div class="n">Messages</div></div><div class="sw off"></div></div>
+<div class="item"><span class="ic">K</span><div class="g"><div class="n">Clock</div></div><div class="sw"></div></div>
+<div class="item"><span class="ic">G</span><div class="g"><div class="n">Maps</div></div><div class="sw off"></div></div>
+</div>
+<div class="btn filled">Save</div>
+<div class="gb"></div>
+</div><div class="cap"><b>3.</b> Allowed apps</div></div>
+
+</div>
+
+<h2>B. Evening, plan tomorrow</h2>
+<div class="sub2">Repeating tasks fill the plan. Adding a one-off is one tap from saved tasks. New tasks are built with taps and must have an amount.</div>
+<div class="wrap">
+
+<div class="col"><div class="phone">
+<div class="sb"><span>21:30</span><span>wifi &nbsp;battery</span></div>
+<div class="bar"><div class="h">Plan tomorrow</div><div class="s">Wed 30 Sep, filled from your repeats</div></div>
+<div class="list">
+<div class="item"><div class="g"><div class="n">Legs, 3 lifts x 3 sets</div><div class="d">Gym, 15 min, repeats daily</div></div></div>
+<div class="item"><div class="g"><div class="n">Read 2 pages from p.105</div><div class="d">Quran, 30 min, repeats daily</div></div></div>
+<div class="item"><div class="g"><div class="n">Write section 3.4, 500 words</div><div class="d">Chapter 3 draft, 50 min</div></div></div>
+<div class="textb">+ Add saved task</div>
+<div class="sm" style="padding-top:8px">3 tasks, 1 h 35 min</div>
+</div>
+<div class="btn filled">Save plan</div>
+<div class="gb"></div>
+</div><div class="cap"><b>4.</b> Plan tomorrow</div></div>
+
+<div class="col"><div class="phone">
+<div class="sb"><span>21:31</span><span>wifi &nbsp;battery</span></div>
+<div class="bar"><div class="h">Plan tomorrow</div><div class="s">Wed 30 Sep</div></div>
+<div class="list">
+<div class="item"><div class="g"><div class="n">Legs, 3 lifts x 3 sets</div></div></div>
+<div class="item"><div class="g"><div class="n">Read 2 pages from p.105</div></div></div>
+</div>
+<div class="scrim"></div>
+<div class="sheet">
+<div class="handle"></div>
+<div class="field" style="margin-top:0;color:var(--text2)">Search or create a task</div>
+<div class="lab">Saved tasks</div>
+<div class="item"><div class="g"><div class="n muted">Legs, 3 lifts x 3 sets</div></div><span class="sm">Added</span></div>
+<div class="item"><div class="g"><div class="n muted">Read 2 pages from p.105</div></div><span class="sm">Added</span></div>
+<div class="item"><div class="g"><div class="n">Write section 3.4, 500 words</div><div class="d">50 min</div></div><span class="add">+</span></div>
+<div class="item"><div class="g"><div class="n">Read 2 papers, 3 takeaways each</div><div class="d">25 min</div></div><span class="add">+</span></div>
+<div class="item"><div class="g"><div class="n">Walk</div><div class="d">20 min</div></div><span class="add">+</span></div>
+</div>
+</div><div class="cap"><b>5.</b> Add from saved tasks</div></div>
+
+<div class="col"><div class="phone">
+<div class="sb"><span>21:32</span><span>wifi &nbsp;battery</span></div>
+<div class="bar row"><div class="h">New task</div><span class="x">&#10005;</span></div>
+<div class="list">
+<div class="field" style="margin-top:6px"><span class="fl">What</span>Read Quran</div>
+<div class="lab">How much</div>
+<div class="step"><div class="b">&minus;</div><div class="v">2</div><div class="b">+</div></div>
+<div class="chips"><div class="chip on">pages</div><div class="chip">verses</div><div class="chip">words</div><div class="chip">sets</div><div class="chip">min</div></div>
+<div class="lab">Starts at</div>
+<div class="field" style="min-height:40px;padding:8px 14px;margin-top:4px"><span class="fl">Page</span>105</div>
+<div class="lab">Time limit</div>
+<div class="chips"><div class="chip">15</div><div class="chip on">30</div><div class="chip">50</div><div class="chip">90</div></div>
+<div class="tog"><span>Repeat daily</span><div class="sw"></div></div>
+<div class="prev"><div class="l">Shows up as</div>Read Quran: 2 pages from p.105, 30 min</div>
+</div>
+<div class="btn filled" style="margin-top:8px">Save task</div>
+<div class="gb"></div>
+</div><div class="cap"><b>6.</b> New task</div></div>
+
+</div>
+
+<h2>C. The day</h2>
+<div class="sub2">Today is the home screen. Start a task, work inside the limit, stay in the session, answer one question.</div>
+<div class="wrap">
+
+<div class="col"><div class="phone">
+<div class="sb"><span>08:40</span><span>wifi &nbsp;battery</span></div>
+<div class="bar"><div class="h">Today</div><div class="s">Wednesday 30 Sep</div></div>
+<div class="goalline"><div class="l">Goal, due 12 Oct</div><div class="t">Finish chapter 3 draft and send it to my supervisor</div></div>
+<div class="list">
+<div class="item"><span class="circle done">&#10003;</span><div class="g"><div class="n done-t">Legs, 3 lifts x 3 sets</div></div><span class="m">15 / 15</span></div>
+<div class="next"><div class="l">Next</div><div class="t">Read 2 pages from p.105</div>
+<div class="l">12 of 30 min used</div>
+<div class="track"><div class="fill" style="width:40%"></div></div>
+<div class="b">Resume</div></div>
+<div class="item"><span class="circle"></span><div class="g"><div class="n">Write section 3.4, 500 words</div></div><span class="m">50 min</span></div>
+</div>
+<div class="tlink"><span>Log</span><span>Plan tomorrow</span></div>
+<div class="gb"></div>
+</div><div class="cap"><b>7.</b> Today (home)</div></div>
+
+<div class="col"><div class="phone">
+<div class="center">
+<div style="font-size:15px;color:var(--text2)">Read Quran</div>
+<div style="font-size:26px;font-weight:500;line-height:1.25">Pages 105 to 106</div>
+<div class="timer">24:10</div>
+<div style="font-size:14px;color:var(--text2)">Left today, limit 30 min</div>
+</div>
+<div class="status"><span class="dot"></span>Do Not Disturb on, calls allowed</div>
+<div class="btn outlined">Stop</div>
+<div class="gb"></div>
+</div><div class="cap"><b>8.</b> Session</div></div>
+
+<div class="col"><div class="phone">
+<div class="sb"><span>08:52</span><span>wifi &nbsp;battery</span></div>
+<div class="bar"><div class="h">Another app</div></div>
+<div class="fake"><div style="height:70px"></div><div style="height:120px"></div><div style="height:50px"></div><div style="height:90px"></div></div>
+<div class="ov"><div class="ovc">
+<div style="font-size:13px;color:var(--text2)">Session running</div>
+<div style="font-size:20px;font-weight:500;margin:4px 0 2px">Read Quran</div>
+<div style="font-size:44px;letter-spacing:-1px;font-variant-numeric:tabular-nums;margin:6px 0 16px">22:03</div>
+<div class="btn filled">Back to session</div>
+<div class="textb" style="padding-top:14px">End session</div>
+<div class="sm" style="margin-top:12px">Calls still come through.</div>
+</div></div>
+</div><div class="cap"><b>9.</b> Blocked app opened</div></div>
+
+<div class="col"><div class="phone">
+<div class="sb"><span>08:24</span><span>wifi &nbsp;battery</span></div>
+<div class="bar"><div class="h">Session done</div><div class="s">Read Quran</div></div>
+<div class="list">
+<div style="font-size:24px;font-weight:500;margin:6px 0 4px">Pages 105 to 106</div>
+<div style="font-size:15px;color:var(--text2);margin-bottom:18px">Did you finish it?</div>
+<div class="btn filled" style="margin-bottom:10px">Yes</div>
+<div class="btn tonalb">Partly</div>
+<div class="field" style="margin-top:26px;color:var(--text2)"><span class="fl">One line, optional</span>What stood out</div>
+<div class="sm" style="margin-top:14px">Next time: from p.107</div>
+</div>
+<div class="gb"></div>
+</div><div class="cap"><b>10.</b> Session done</div></div>
+
+</div>
+
+<h2>D. Review</h2>
+<div class="sub2">The log is opened on purpose. Heatmap first, one task or one day on tap, and the goal screen for finishing or dropping.</div>
+<div class="wrap">
+
+<div class="col"><div class="phone">
+<div class="sb"><span>21:40</span><span>wifi &nbsp;battery</span></div>
+<div class="bar row"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><div class="h">Log</div></div>
+<div class="chips2"><div class="chip on">All</div><div class="chip">Gym</div><div class="chip">Quran</div><div class="chip">Chapter 3</div></div>
+<div class="grid" id="g1"></div>
+<div class="legend">Less <span class="c"></span><span class="c l1"></span><span class="c l2"></span><span class="c l3"></span><span class="c l4"></span> More</div>
+<div class="sum">This week: <b>6 h 40 min</b></div>
+<div class="list">
+<div class="row"><div class="d">Tue 29 Sep, Chapter 3 draft, 50 min</div><div class="t">Wrote section 3.4 draft</div></div>
+<div class="row"><div class="d">Tue 29 Sep, Quran, pages 103 to 104</div><div class="t">Finished the day's portion</div></div>
+<div class="row"><div class="d">Tue 29 Sep, Gym, 15 min</div><div class="t">Upper body</div></div>
+</div>
+<div class="gb"></div>
+</div><div class="cap"><b>11.</b> Log, all tasks</div></div>
+
+<div class="col"><div class="phone">
+<div class="sb"><span>21:40</span><span>wifi &nbsp;battery</span></div>
+<div class="bar row"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><div class="h">Log</div></div>
+<div class="chips2"><div class="chip">All</div><div class="chip">Gym</div><div class="chip on">Quran</div><div class="chip">Chapter 3</div></div>
+<div class="grid" id="g2"></div>
+<div class="legend">Limit missed <span class="c"></span> Limit hit <span class="c l4"></span></div>
+<div class="big">9 days</div>
+<div class="sm">Current run of limit hit</div>
+<div class="list" style="margin-top:12px">
+<div class="row"><div class="d">Tue 29 Sep</div><div class="t">Pages 103 to 104</div></div>
+<div class="row"><div class="d">Mon 28 Sep</div><div class="t">Pages 101 to 102</div></div>
+<div class="row"><div class="d">Sun 27 Sep</div><div class="t">Pages 99 to 100</div></div>
+</div>
+<div class="gb"></div>
+</div><div class="cap"><b>12.</b> Log, one task</div></div>
+
+<div class="col"><div class="phone">
+<div class="sb"><span>21:40</span><span>wifi &nbsp;battery</span></div>
+<div class="bar row"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><div class="h">Log</div></div>
+<div class="chips2"><div class="chip on">All</div><div class="chip">Gym</div><div class="chip">Quran</div><div class="chip">Chapter 3</div></div>
+<div class="grid" id="g3"></div>
+<div class="legend">Less <span class="c"></span><span class="c l1"></span><span class="c l2"></span><span class="c l3"></span><span class="c l4"></span> More</div>
+<div class="sum"><b>Mon 28 Sep</b>, 2 h 10 min</div>
+<div class="list">
+<div class="row"><div class="d">Gym, 15 of 15 min</div><div class="t">Legs</div></div>
+<div class="row"><div class="d">Quran, pages 101 to 102</div><div class="t">Reviewed yesterday's verses</div></div>
+<div class="row"><div class="d">Chapter 3 draft, 500 of 500 words</div><div class="t">Wrote section 3.2 draft</div></div>
+<div class="row"><div class="d">Read papers, 1 of 2</div><div class="t">Stopped early, phone call</div></div>
+</div>
+<div class="gb"></div>
+</div><div class="cap"><b>13.</b> Log, day selected</div></div>
+
+<div class="col"><div class="phone">
+<div class="sb"><span>21:41</span><span>wifi &nbsp;battery</span></div>
+<div class="bar row"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><div class="h">Goal</div></div>
+<div class="list">
+<div style="font-size:26px;font-weight:500;line-height:1.25;margin-top:20px">Finish chapter 3 draft and send it to my supervisor</div>
+<div class="sm" style="margin-top:10px;font-size:14px">Due 12 Oct, 13 days left</div>
+</div>
+<div class="btn filled">Mark complete</div>
+<div class="btn outlined" style="margin-top:10px">Drop goal</div>
+<div class="note">Dropping asks for one line: why.</div>
+<div class="gb"></div>
+</div><div class="cap"><b>14.</b> Goal (tap the goal on Today)</div></div>
+
+</div>
+</div>
+<script>
+function rng(seed){var s=seed;return function(){s=(s*1664525+1013904223)%4294967296;return s/4294967296}}
+function build(id,seed,binary,sel){
+  var el=document.getElementById(id),r=rng(seed),html='';
+  for(var i=0;i<84;i++){
+    var cls='c';
+    if(i>78){cls+=' f'}
+    else{
+      var v=r();
+      if(binary){ if(v>0.3||i>69){cls+=' l4'} }
+      else{
+        var w=(i%7>=5)?0.25:0;
+        if(v>0.82-w*0.4){cls+=' l4'}
+        else if(v>0.6-w){cls+=' l3'}
+        else if(v>0.38-w){cls+=' l2'}
+        else if(v>0.2-w){cls+=' l1'}
+      }
+    }
+    if(i===sel){cls+=' sel'}
+    html+='<div class="'+cls+'"></div>';
+  }
+  el.innerHTML=html;
+}
+build('g1',7,false,-1);
+build('g2',11,true,-1);
+build('g3',7,false,77);
+</script>
+</body>
+</html>

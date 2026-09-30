@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { PaperProvider } from "react-native-paper";
 
 import { DatabaseProvider, useDb } from "@/db/DatabaseProvider";
@@ -36,12 +37,14 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      <PaperProvider theme={theme}>
-        <StatusBar style={theme.dark ? "light" : "dark"} hidden={false} />
-        <DatabaseProvider>
-          <Navigator theme={theme} />
-        </DatabaseProvider>
-      </PaperProvider>
+      <KeyboardProvider>
+        <PaperProvider theme={theme}>
+          <StatusBar style={theme.dark ? "light" : "dark"} hidden={false} />
+          <DatabaseProvider>
+            <Navigator theme={theme} />
+          </DatabaseProvider>
+        </PaperProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

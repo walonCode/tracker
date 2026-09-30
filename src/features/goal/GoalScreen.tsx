@@ -1,13 +1,17 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
+import { useKeyboardState } from "react-native-keyboard-controller";
 import { Button, Dialog, HelperText, Portal, Text, TextInput } from "react-native-paper";
 
+import { Screen } from "@/components/Screen";
 import { ScreenBar } from "@/components/ScreenBar";
+import { Action, Hint } from "@/components/ui";
 import { useDb } from "@/db/DatabaseProvider";
 import * as goals from "@/db/repos/goals";
-import { formatDate, today } from "@/domain/dates";
+import { formatDayMonth, today } from "@/domain/dates";
 import { daysLeft, TEXT_MAX, validateReason } from "@/domain/goalRules";
+import { useAppTheme } from "@/theme";
 
 import { useActiveGoal } from "./useActiveGoal";
 
@@ -24,7 +28,10 @@ function backToToday() {
 /** Screen 14: the active goal, with complete and drop actions. */
 export function GoalScreen() {
   const db = useDb();
+  const theme = useAppTheme();
   const goal = useActiveGoal();
+  // Lifts the drop dialog above the keyboard while its field has focus.
+  const keyboardHeight = useKeyboardState((state) => (state.isVisible ? state.height : 0));
   const [dialog, setDialog] = useState<"complete" | "drop" | null>(null);
   const [reason, setReason] = useState("");
   const [reasonError, setReasonError] = useState<string | null>(null);
@@ -33,7 +40,7 @@ export function GoalScreen() {
     if (goal === null) backToToday();
   }, [goal]);
 
-  if (!goal) return <ScreenBar title="Goal" />;
+  if (!goal) return <Screen bar={<ScreenBar title="Goal" />} />;
 
   const todayDate = today();
 
@@ -58,22 +65,26 @@ export function GoalScreen() {
     setReasonError(null);
   }
 
+  const left = daysLeft(goal.due_date, todayDate);
   return (
-    <View style={styles.root}>
-      <ScreenBar title="Goal" />
-      <View style={styles.body}>
-        <Text variant="headlineSmall">{goal.title}</Text>
-        <Text variant="bodyLarge">Due {formatDate(goal.due_date, todayDate)}</Text>
-        <Text variant="bodyLarge">{daysLeftText(daysLeft(goal.due_date, todayDate))}</Text>
-      </View>
-      <View style={styles.actions}>
-        <Button mode="contained" onPress={() => setDialog("complete")}>
-          Mark complete
-        </Button>
-        <Button mode="outlined" onPress={() => setDialog("drop")}>
-          Drop goal
-        </Button>
-      </View>
+    <Screen
+      bar={<ScreenBar title="Goal" />}
+      footer={
+        <>
+          <Action onPress={() => setDialog("complete")}>Mark complete</Action>
+          <Action kind="outlined" onPress={() => setDialog("drop")}>
+            Drop goal
+          </Action>
+          <Hint style={styles.note}>Dropping asks for one line: why.</Hint>
+        </>
+      }
+    >
+      <Text variant="headlineMedium" style={styles.title}>
+        {goal.title}
+      </Text>
+      <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>
+        {`Due ${formatDayMonth(goal.due_date, todayDate)}, ${left === 0 ? "due today" : daysLeftText(left)}`}
+      </Text>
 
       <Portal>
         <Dialog visible={dialog === "complete"} onDismiss={closeDialog}>
@@ -84,7 +95,7 @@ export function GoalScreen() {
           </Dialog.Actions>
         </Dialog>
 
-        <Dialog visible={dialog === "drop"} onDismiss={closeDialog}>
+        <Dialog visible={dialog === "drop"} onDismiss={closeDialog} style={{ marginBottom: keyboardHeight }}>
           <Dialog.Title>Drop this goal?</Dialog.Title>
           <Dialog.Content>
             <TextInput
@@ -106,12 +117,11 @@ export function GoalScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  body: { padding: 16, gap: 8 },
-  actions: { padding: 16, gap: 12 },
+  title: { fontWeight: "500", marginTop: 12 },
+  note: { alignItems: "center" },
 });

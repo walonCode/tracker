@@ -1,6 +1,10 @@
 import { router } from "expo-router";
 import { useState, type ReactNode } from "react";
-import { Appbar, Menu } from "react-native-paper";
+import { StyleSheet, View } from "react-native";
+import { IconButton, Menu, Text } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { useAppTheme } from "@/theme";
 
 export interface OverflowItem {
   title: string;
@@ -9,33 +13,48 @@ export interface OverflowItem {
 
 interface ScreenBarProps {
   title: string;
+  /** Second line under the title, e.g. the date or "One goal at a time". */
+  subtitle?: string;
   /** Show the back arrow. Defaults to whether there is a screen to go back to. */
   back?: boolean;
-  /** Right-side action slot, e.g. `<Appbar.Action … />`. */
+  /** Show a close (✕) button on the right instead of a back arrow, for forms. */
+  onClose?: () => void;
+  /** Right-side action slot. */
   right?: ReactNode;
   /** Overflow (three dots) menu. Hidden while the list is empty. */
   menu?: readonly OverflowItem[];
 }
 
-/** The top bar used by every screen. */
-export function ScreenBar({ title, back = router.canGoBack(), right, menu = [] }: ScreenBarProps) {
+/** The top bar used by every screen: a large title with an optional subtitle. */
+export function ScreenBar({ title, subtitle, back, onClose, right, menu = [] }: ScreenBarProps) {
+  const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
+  const showBack = (back ?? router.canGoBack()) && !onClose;
 
   return (
-    <Appbar.Header>
-      {back ? <Appbar.BackAction onPress={() => router.back()} /> : null}
-      <Appbar.Content title={title} />
+    <View style={[styles.bar, { paddingTop: insets.top + 8 }]}>
+      {showBack ? (
+        <IconButton icon="arrow-left" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back} />
+      ) : null}
+      <View style={[styles.titles, !showBack && styles.titlesNoBack]}>
+        <Text variant="headlineSmall" accessibilityRole="header" numberOfLines={2}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
       {right}
+      {onClose ? <IconButton icon="close" accessibilityLabel="Close" onPress={onClose} /> : null}
       {menu.length > 0 ? (
         <Menu
           visible={menuOpen}
           onDismiss={() => setMenuOpen(false)}
           anchor={
-            <Appbar.Action
-              icon="dots-vertical"
-              accessibilityLabel="More options"
-              onPress={() => setMenuOpen(true)}
-            />
+            <IconButton icon="dots-vertical" accessibilityLabel="More options" onPress={() => setMenuOpen(true)} />
           }
         >
           {menu.map((item) => (
@@ -50,6 +69,13 @@ export function ScreenBar({ title, back = router.canGoBack(), right, menu = [] }
           ))}
         </Menu>
       ) : null}
-    </Appbar.Header>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  bar: { flexDirection: "row", alignItems: "center", minHeight: 64, paddingRight: 4, paddingBottom: 8 },
+  back: { marginLeft: 4 },
+  titles: { flex: 1, justifyContent: "center", paddingVertical: 4 },
+  titlesNoBack: { paddingLeft: 20 },
+});

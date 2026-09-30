@@ -1,4 +1,4 @@
-import { taskLabel } from "../labels";
+import { repeatText, taskLabel } from "../labels";
 
 describe("taskLabel", () => {
   it("uses the cursor with a page prefix", () => {
@@ -27,5 +27,15 @@ describe("taskLabel", () => {
 
   it("ignores a cursor on a non-sequential unit", () => {
     expect(taskLabel({ title: "Gym", amount: 3, unit: "sets", cursor: 4 })).toBe("Gym, 3 sets");
+  });
+});
+
+describe("repeatText", () => {
+  it("names daily, weekday, weekend, and other patterns", () => {
+    expect(repeatText([0, 1, 2, 3, 4, 5, 6])).toBe("repeats daily");
+    expect(repeatText([4, 0, 3, 1, 2])).toBe("repeats weekdays");
+    expect(repeatText([5, 6])).toBe("repeats weekends");
+    expect(repeatText([4, 0, 2])).toBe("repeats Mon, Wed, Fri");
+    expect(repeatText([])).toBeNull();
   });
 });

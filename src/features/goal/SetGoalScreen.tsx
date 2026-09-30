@@ -1,9 +1,10 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { HelperText, Text, TextInput } from "react-native-paper";
+import { HelperText, TextInput } from "react-native-paper";
 import { DatePickerInput, enGB, registerTranslation } from "react-native-paper-dates";
 
+import { Hint } from "@/components/ui";
 import { useDb } from "@/db/DatabaseProvider";
 import * as goals from "@/db/repos/goals";
 import { localDate, localTimeToSeconds, today } from "@/domain/dates";
@@ -71,7 +72,8 @@ export function SetGoalScreen() {
 
   return (
     <StepScreen
-      title={isNext ? "Set your next goal" : "Set your goal"}
+      title={isNext ? "Your next goal" : "Your goal"}
+      subtitle="One goal at a time"
       back={isNext}
       actionLabel="Continue"
       onAction={onContinue}
@@ -81,14 +83,13 @@ export function SetGoalScreen() {
         <TextInput
           mode="outlined"
           label="Goal"
+          multiline
           value={title}
           onChangeText={setTitle}
           maxLength={TEXT_MAX}
           error={Boolean(errors.title)}
         />
-        <HelperText type="error" visible={Boolean(errors.title)}>
-          {errors.title}
-        </HelperText>
+        {errors.title ? <HelperText type="error">{errors.title}</HelperText> : null}
       </View>
       <View>
         <DatePickerInput
@@ -103,14 +104,10 @@ export function SetGoalScreen() {
           hasError={Boolean(errors.due)}
           hideValidationErrors
         />
-        <HelperText type="error" visible={Boolean(errors.due)}>
-          {errors.due}
-        </HelperText>
+        {errors.due ? <HelperText type="error">{errors.due}</HelperText> : null}
       </View>
       {errors.form ? <HelperText type="error">{errors.form}</HelperText> : null}
-      <Text variant="bodyMedium">
-        You can set a new goal only after this one is finished or dropped.
-      </Text>
+      <Hint>Pick something you can finish. To set a new goal later, you finish or drop this one first.</Hint>
     </StepScreen>
   );
 }

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Button, Dialog, Portal, Text } from "react-native-paper";
 
+import { Action } from "@/components/ui";
 import { useDb } from "@/db/DatabaseProvider";
 import * as planItems from "@/db/repos/planItems";
 import * as sessions from "@/db/repos/sessions";
@@ -71,31 +72,25 @@ export function BlockedScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.middle}>
-        <Text variant="headlineMedium">Session running</Text>
+      <View style={[styles.card, { borderColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface }]}>
+        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+          Session running
+        </Text>
         {item ? (
-          <Text variant="titleMedium" style={styles.center}>
-            {item.label_snapshot}
+          <Text variant="titleLarge" style={styles.title}>
+            {item.title}
           </Text>
         ) : null}
-        {left !== null ? (
-          <Text variant="displayMedium" style={styles.timer}>
-            {formatClock(left)}
-          </Text>
-        ) : null}
-        {left !== null ? <Text variant="bodyLarge">left today</Text> : null}
-      </View>
-      <View style={styles.actions}>
-        <Button mode="contained" onPress={backToSession}>
+        {left !== null ? <Text style={[styles.timer, { color: theme.colors.onSurface }]}>{formatClock(left)}</Text> : null}
+        <Action onPress={backToSession} style={styles.stretch}>
           Back to session
-        </Button>
-        <Button
-          mode="text"
-          onPress={() => setCountdown(END_COUNTDOWN_SECONDS)}
-          disabled={countdown !== null || !session}
-        >
+        </Action>
+        <Button mode="text" onPress={() => setCountdown(END_COUNTDOWN_SECONDS)} disabled={countdown !== null || !session}>
           {countdown !== null && countdown > 0 ? `End session (${countdown})` : "End session"}
         </Button>
+        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+          Calls still come through.
+        </Text>
       </View>
 
       <Portal>
@@ -117,9 +112,9 @@ export function BlockedScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, padding: 24 },
-  middle: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  center: { textAlign: "center" },
-  timer: { fontVariant: ["tabular-nums"] },
-  actions: { gap: 12, paddingBottom: 16 },
+  root: { flex: 1, justifyContent: "center", padding: 22 },
+  card: { borderWidth: 1, borderRadius: 28, paddingHorizontal: 18, paddingVertical: 24, alignItems: "center", gap: 6 },
+  title: { fontWeight: "500", textAlign: "center" },
+  timer: { fontSize: 52, letterSpacing: -1, fontVariant: ["tabular-nums"], marginVertical: 12 },
+  stretch: { alignSelf: "stretch" },
 });
