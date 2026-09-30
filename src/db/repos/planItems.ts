@@ -1,6 +1,6 @@
 import { daysBetween, today, type LocalDate } from "@/domain/dates";
 
-import type { Db, PlanItem } from "../types";
+import type { Db, PlanItem, TaskUnit } from "../types";
 
 export interface PlanItemInput {
   taskId: number;
@@ -46,6 +46,31 @@ export async function listByDate(db: Db, date: LocalDate): Promise<PlanItem[]> {
   return db.getAllAsync<PlanItem>(
     "SELECT * FROM plan_items WHERE plan_date = ? ORDER BY position, id",
     [date],
+  );
+}
+
+/** A plan item with the task fields Today and the Session screen show. */
+export interface DayItem extends PlanItem {
+  title: string;
+  detail: string | null;
+  unit: TaskUnit;
+  cursor: number | null;
+}
+
+export async function listDayWithTasks(db: Db, date: LocalDate): Promise<DayItem[]> {
+  return db.getAllAsync<DayItem>(
+    `SELECT p.*, t.title, t.detail, t.unit, t.cursor FROM plan_items p
+     JOIN tasks t ON t.id = p.task_id
+     WHERE p.plan_date = ? ORDER BY p.position, p.id`,
+    [date],
+  );
+}
+
+export async function getWithTask(db: Db, id: number): Promise<DayItem | null> {
+  return db.getFirstAsync<DayItem>(
+    `SELECT p.*, t.title, t.detail, t.unit, t.cursor FROM plan_items p
+     JOIN tasks t ON t.id = p.task_id WHERE p.id = ?`,
+    [id],
   );
 }
 
