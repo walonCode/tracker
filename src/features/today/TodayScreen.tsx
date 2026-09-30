@@ -180,6 +180,9 @@ export function TodayScreen() {
         <View>{items?.map((item) => (item === next ? renderNext(item) : renderRow(item)))}</View>
 
         <View style={styles.links}>
+          <Button mode="text" onPress={() => router.push("/log")}>
+            Log
+          </Button>
           <Button mode="text" onPress={() => router.push("/plan")}>
             Plan tomorrow
           </Button>
